@@ -8,9 +8,9 @@ use thiserror::Error;
 /// An error that can occur while reading NBT data from a buffer.
 #[derive(Error, Debug)]
 pub enum ReadError {
-    /// Occurs when the buffer is smaller than the expected size.
-    #[error("unexpectedly reached end of buffer")]
-    UnexpectedEOF,
+    /// Occurs when an IO error occurs.
+    #[error("{0}")]
+    Io(#[from] std::io::Error),
     /// Occurs when the reader finds a tag type while reading that is not part of the expected tag
     /// types.
     #[error("expected tag {0}, found {1}")]
@@ -30,6 +30,9 @@ pub enum ReadError {
 /// An error that can occur while writing NBT data into a buffer.
 #[derive(Error, Debug)]
 pub enum WriteError {
+    /// Occurs when an IO error occurs.
+    #[error("{0}")]
+    Io(#[from] std::io::Error),
     /// Occurs when a list is made up of NBT tags with differing types.
     #[error("expected tag {0}, found {1}")]
     UnexpectedTag(String, String),

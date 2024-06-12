@@ -3,8 +3,8 @@
 
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::io::{Read, Write};
 
-use bytes::{Buf, BufMut};
 use strum_macros::{Display, IntoStaticStr};
 
 use encode::Writer;
@@ -103,21 +103,21 @@ impl NBTTag {
 
     /// Attempts to read the data from a buffer into an NBT value using the specified [Reader]
     /// encoding.
-    pub fn read(buf: &mut impl Buf, r: &mut impl Reader) -> decode::Res<Self> {
+    pub fn read(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
         let tag_id = r.u8(buf)?;
         r.string(buf)?;
         Self::read_inner(buf, tag_id, r)
     }
 
     /// Attempts to write the NBT data into a buffer using the specified [Writer] encoding.
-    pub fn write(&self, buf: &mut impl BufMut, w: &mut impl Writer) -> encode::Res {
+    pub fn write(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
         w.write_u8(buf, self.tag_id())?;
         w.write_string(buf, "")?;
         self.write_inner(buf, w)
     }
 
     /// Internal function used to read NBT data. Slightly differs from [Self::read].
-    fn read_inner(buf: &mut impl Buf, tag_id: u8, r: &mut impl Reader) -> decode::Res<Self> {
+    fn read_inner(buf: &mut impl Read, tag_id: u8, r: &mut impl Reader) -> decode::Res<Self> {
         Ok(match tag_id {
             1 => NBTTag::Byte(r.u8(buf)?.into()),
             2 => NBTTag::Short(r.i16(buf)?.into()),
@@ -166,7 +166,7 @@ impl NBTTag {
     }
 
     /// Internal function used to write NBT data. Slightly differs from [Self::write].
-    fn write_inner(&self, buf: &mut impl BufMut, w: &mut impl Writer) -> encode::Res {
+    fn write_inner(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
         match self {
             Self::Byte(x) => w.write_u8(buf, x.0)?,
             Self::Short(x) => w.write_i16(buf, x.0)?,
