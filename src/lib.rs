@@ -128,11 +128,11 @@ impl NBTTag {
             8 => {
                 let string = r.string(buf);
                 if let Err(ErrorPath {
-                    inner: ReadError::InvalidString(utf8),
+                    inner: ReadError::InvalidString(bytes),
                     path: _,
                 }) = string
                 {
-                    Ok(NBTTag::String(tag::String::Bytes(utf8.into_bytes())))
+                    Ok(NBTTag::String(tag::String::Bytes(bytes)))
                 } else {
                     Ok(NBTTag::String(tag::String::Utf8(string?)))
                 }
@@ -186,7 +186,19 @@ impl NBTTag {
             Self::Float(x) => w.write_f32(buf, x.0)?,
             Self::Double(x) => w.write_f64(buf, x.0)?,
             Self::String(tag::String::Utf8(x)) => w.write_string(buf, x.as_str())?,
-            Self::String(tag::String::Bytes(x)) => w.write_u8_vec(buf, x)?,
+            Self::String(tag::String::Bytes(x)) => {
+                if x.len() > i16::MAX as usize {
+                    return Err(ErrorPath::new(WriteError::SeqLengthViolation(
+                        i16::MAX as usize,
+                        x.len(),
+                    )));
+                }
+                w.write_i16(buf, x.len() as i16)?;
+                for (i, b) in x.iter().enumerate() {
+                    w.write_u8(buf, *b)
+                        .map_err(|err| err.prepend(PathPart::Element(i)))?;
+                }
+            }
             Self::Compound(x) => {
                 for (name, val) in &x.0 {
                     w.write_u8(buf, val.tag_id())?;

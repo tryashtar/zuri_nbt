@@ -233,7 +233,10 @@ impl Reader for NetworkLittleEndian {
             );
         }
 
-        String::from_utf8(str_buf).map_err(|err| ErrorPath::new(ReadError::from(err)))
+        match cesu8::from_java_cesu8(&str_buf) {
+            Ok(str) => Ok(str.into_owned()),
+            Err(_) => Err(ErrorPath::new(ReadError::InvalidString(str_buf))),
+        }
     }
 }
 
@@ -284,20 +287,21 @@ impl Writer for NetworkLittleEndian {
     }
 
     fn write_string(&mut self, buf: &mut impl Write, x: &str) -> encode::Res {
-        if x.len() > i16::MAX as usize {
+        let modified_bytes = cesu8::to_java_cesu8(x);
+        if modified_bytes.len() > i16::MAX as usize {
             return Err(ErrorPath::new(WriteError::SeqLengthViolation(
                 i16::MAX as usize,
-                x.len(),
+                modified_bytes.len(),
             )));
         }
 
-        let mut l = x.len() as u32;
+        let mut l = modified_bytes.len() as u32;
         while l >= 0x80 {
             self.write_u8(buf, l as u8 | 0x80)?;
             l >>= 7;
         }
         self.write_u8(buf, l as u8)?;
-        for b in x.as_bytes() {
+        for b in modified_bytes.iter() {
             self.write_u8(buf, *b)?;
         }
         Ok(())
@@ -350,11 +354,11 @@ mod tests {
 
     #[test]
     fn test_invalid_tagtype() {
-        let mut valid_buf: Vec<u8> = vec![0x03, 0x00, 0x01, 0x61, 0x12, 0x34, 0x56, 0x78];
+        let valid_buf: Vec<u8> = vec![0x03, 0x00, 0x01, 0x61, 0x12, 0x34, 0x56, 0x78];
         let nbt = NBTTag::read(&mut valid_buf.as_slice(), &mut BigEndian).unwrap();
         assert!(matches!(nbt, NBTTag::Int(tag::Int(0x12345678))));
 
-        let mut invalid_buf: Vec<u8> = vec![0x15, 0x00, 0x01, 0x61, 0x12, 0x34, 0x56, 0x78];
+        let invalid_buf: Vec<u8> = vec![0x15, 0x00, 0x01, 0x61, 0x12, 0x34, 0x56, 0x78];
         let nbt = NBTTag::read(&mut invalid_buf.as_slice(), &mut BigEndian);
         assert!(matches!(
             nbt,
@@ -363,5 +367,32 @@ mod tests {
                 path: _
             })
         ))
+    }
+
+    #[test]
+    fn test_modified_utf8() {
+        let normal_string = vec![0x08, 0x00, 0x00, 0x00, 0x04, 0x6e, 0x61, 0x6d, 0x65];
+        let nbt = NBTTag::read(&mut normal_string.as_slice(), &mut BigEndian).unwrap();
+        assert!(matches!(&nbt, NBTTag::String(tag::String::Utf8(x)) if x == "name"));
+        let mut buf = vec![];
+        nbt.write(&mut buf, &mut BigEndian).unwrap();
+        assert_eq!(normal_string, buf);
+
+        let null_encoded_string = vec![0x08, 0x00, 0x00, 0x00, 0x04, 0xc0, 0x80, 0xc0, 0x80];
+        let nbt = NBTTag::read(&mut null_encoded_string.as_slice(), &mut BigEndian).unwrap();
+        assert!(matches!(&nbt, NBTTag::String(tag::String::Utf8(x)) if x == "\0\0"));
+        let mut buf = vec![];
+        nbt.write(&mut buf, &mut BigEndian).unwrap();
+        assert_eq!(null_encoded_string, buf);
+
+        let null_invalid_string = vec![0x08, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x80];
+        let nbt = NBTTag::read(&mut null_invalid_string.as_slice(), &mut BigEndian).unwrap();
+        assert!(matches!(
+            &nbt,
+            NBTTag::String(tag::String::Bytes(x)) if matches!(x.as_slice(), [0x00, 0x00, 0x00, 0x80])
+        ));
+        let mut buf = vec![];
+        nbt.write(&mut buf, &mut BigEndian).unwrap();
+        assert_eq!(null_invalid_string, buf);
     }
 }

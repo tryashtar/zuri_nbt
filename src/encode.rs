@@ -30,15 +30,16 @@ pub trait Writer {
 
     /// Writes a variable-length string.
     fn write_string(&mut self, buf: &mut impl Write, x: &str) -> Res {
-        if x.len() > i16::MAX as usize {
+        let modified_bytes = cesu8::to_java_cesu8(x);
+        if modified_bytes.len() > i16::MAX as usize {
             return Err(ErrorPath::new(WriteError::SeqLengthViolation(
                 i16::MAX as usize,
-                x.len(),
+                modified_bytes.len(),
             )));
         }
 
-        self.write_i16(buf, x.len() as i16)?;
-        for (i, b) in x.as_bytes().iter().enumerate() {
+        self.write_i16(buf, modified_bytes.len() as i16)?;
+        for (i, b) in modified_bytes.iter().enumerate() {
             self.write_u8(buf, *b)
                 .map_err(|err| err.prepend(PathPart::Element(i)))?;
         }

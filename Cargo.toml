@@ -12,6 +12,7 @@ exclude = [".github/"]
 [dependencies]
 byteorder = "1.5.0"
 bytestream = "0.4.1"
+cesu8 = "1.1.0"
 serde = { version = "1.0.162", optional = true }
 strum = "0.25.0"
 strum_macros = "0.25.1"

@@ -51,8 +51,10 @@ pub trait Reader {
                     .map_err(|err| err.prepend(PathPart::Element(i as usize)))?,
             );
         }
-
-        String::from_utf8(str_buf).map_err(|err| ErrorPath::new(ReadError::from(err)))
+        match cesu8::from_java_cesu8(&str_buf) {
+            Ok(str) => Ok(str.into_owned()),
+            Err(_) => Err(ErrorPath::new(ReadError::InvalidString(str_buf))),
+        }
     }
 
     /// Reads variable-length array of 8-bit unsigned integers.

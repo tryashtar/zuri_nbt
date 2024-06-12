@@ -2,7 +2,6 @@
 use std::collections::VecDeque;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
-use std::string::FromUtf8Error;
 use thiserror::Error;
 
 /// An error that can occur while reading NBT data from a buffer.
@@ -23,8 +22,8 @@ pub enum ReadError {
     #[error("sequence length must be between 0 and {0}, but got {1}")]
     SeqLengthViolation(usize, usize),
     /// A byte sequence could not be read as a valid UTF-8 byte sequence.
-    #[error("could not decode string: {0}")]
-    InvalidString(#[from] FromUtf8Error),
+    #[error("could not decode string")]
+    InvalidString(Vec<u8>),
     /// A custom variant for errors other than the provided variants.
     #[error("{0}")]
     Custom(String),
