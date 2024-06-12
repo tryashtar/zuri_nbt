@@ -257,7 +257,7 @@ impl<'a> View<'a> {
     /// Returns the string value of the tag if the underlying tag is a [tag::String].
     pub fn string(&self) -> Result<&'a str, ViewError> {
         match &self.tag {
-            InnerView::Ok(Cow::Borrowed(NBTTag::String(s))) => Ok(s.as_str()),
+            InnerView::Ok(Cow::Borrowed(NBTTag::String(tag::String::Utf8(s)))) => Ok(s.as_str()),
             InnerView::Ok(Cow::Owned(NBTTag::String(_))) => unreachable!(),
             InnerView::Ok(t) => Err(ViewError::MismatchedType {
                 expected: NBTTagType::String,

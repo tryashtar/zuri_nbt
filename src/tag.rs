@@ -30,8 +30,13 @@ pub struct Double(pub f64);
 /// A string of characters.
 ///
 /// Should never be larger than [i16::MAX].
-#[derive(Default, Debug, Clone, Eq, PartialEq)]
-pub struct String(pub std::string::String);
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum String {
+    /// Normal and correct UTF-8 encoded string.
+    Utf8(std::string::String),
+    /// Arbitrary bytes that do not constitute valid UTF-8.
+    Bytes(Vec<u8>),
+}
 
 /// A map containing zero or more key-value pairs.
 ///

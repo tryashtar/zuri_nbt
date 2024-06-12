@@ -125,7 +125,18 @@ impl NBTTag {
             4 => NBTTag::Long(r.i64(buf)?.into()),
             5 => NBTTag::Float(r.f32(buf)?.into()),
             6 => NBTTag::Double(r.f64(buf)?.into()),
-            8 => NBTTag::String(r.string(buf)?.into()),
+            8 => {
+                let string = r.string(buf);
+                if let Err(ErrorPath {
+                    inner: ReadError::InvalidString(utf8),
+                    path: _,
+                }) = string
+                {
+                    NBTTag::String(tag::String::Bytes(utf8.into_bytes()))
+                } else {
+                    NBTTag::String(tag::String::Utf8(string?))
+                }
+            }
             10 => {
                 let mut map = HashMap::new();
                 loop {
@@ -174,7 +185,8 @@ impl NBTTag {
             Self::Long(x) => w.write_i64(buf, x.0)?,
             Self::Float(x) => w.write_f32(buf, x.0)?,
             Self::Double(x) => w.write_f64(buf, x.0)?,
-            Self::String(x) => w.write_string(buf, x.0.as_str())?,
+            Self::String(tag::String::Utf8(x)) => w.write_string(buf, x.as_str())?,
+            Self::String(tag::String::Bytes(x)) => w.write_u8_vec(buf, x)?,
             Self::Compound(x) => {
                 for (name, val) in &x.0 {
                     w.write_u8(buf, val.tag_id())?;

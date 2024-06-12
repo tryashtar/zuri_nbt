@@ -89,7 +89,6 @@ impl_newtype_conv!(
     (i64, tag::Long),
     (f32, tag::Float),
     (f64, tag::Double),
-    (String, tag::String),
     (HashMap<String, NBTTag>, tag::Compound),
     (Vec<u8>, tag::ByteArray),
     (Vec<i32>, tag::IntArray),
@@ -99,7 +98,7 @@ impl_newtype_conv!(
 /// Special case: converting `&str` to a [tag::String] requires a clone.
 impl From<&str> for tag::String {
     fn from(value: &str) -> Self {
-        tag::String(value.to_string())
+        tag::String::Utf8(value.to_string())
     }
 }
 
