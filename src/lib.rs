@@ -106,134 +106,49 @@ impl NBTTag {
     pub fn read(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
         let tag_id = r.u8(buf)?;
         r.string(buf)?;
-        Self::read_inner(buf, tag_id, r)
+        Self::read_payload(tag_id, buf, r)
+    }
+
+    fn read_payload(tag_id: u8, buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        match tag_id {
+            1 => Ok(NBTTag::Byte(tag::Byte::read_payload(buf, r)?)),
+            2 => Ok(NBTTag::Short(tag::Short::read_payload(buf, r)?)),
+            3 => Ok(NBTTag::Int(tag::Int::read_payload(buf, r)?)),
+            4 => Ok(NBTTag::Long(tag::Long::read_payload(buf, r)?)),
+            5 => Ok(NBTTag::Float(tag::Float::read_payload(buf, r)?)),
+            6 => Ok(NBTTag::Double(tag::Double::read_payload(buf, r)?)),
+            8 => Ok(NBTTag::String(tag::String::read_payload(buf, r)?)),
+            10 => Ok(NBTTag::Compound(tag::Compound::read_payload(buf, r)?)),
+            9 => Ok(NBTTag::List(tag::List::read_payload(buf, r)?)),
+            7 => Ok(NBTTag::ByteArray(tag::ByteArray::read_payload(buf, r)?)),
+            11 => Ok(NBTTag::IntArray(tag::IntArray::read_payload(buf, r)?)),
+            12 => Ok(NBTTag::LongArray(tag::LongArray::read_payload(buf, r)?)),
+            other => Err(ErrorPath::new(ReadError::UnknownTagType(other))),
+        }
     }
 
     /// Attempts to write the NBT data into a buffer using the specified [Writer] encoding.
     pub fn write(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
         w.write_u8(buf, self.tag_id())?;
         w.write_string(buf, "")?;
-        self.write_inner(buf, w)
+        self.write_payload(buf, w)
     }
 
-    /// Internal function used to read NBT data. Slightly differs from [Self::read].
-    fn read_inner(buf: &mut impl Read, tag_id: u8, r: &mut impl Reader) -> decode::Res<Self> {
-        match tag_id {
-            1 => Ok(NBTTag::Byte(r.u8(buf)?.into())),
-            2 => Ok(NBTTag::Short(r.i16(buf)?.into())),
-            3 => Ok(NBTTag::Int(r.i32(buf)?.into())),
-            4 => Ok(NBTTag::Long(r.i64(buf)?.into())),
-            5 => Ok(NBTTag::Float(r.f32(buf)?.into())),
-            6 => Ok(NBTTag::Double(r.f64(buf)?.into())),
-            8 => {
-                let string = r.string(buf);
-                if let Err(ErrorPath {
-                    inner: ReadError::InvalidString(bytes),
-                    path: _,
-                }) = string
-                {
-                    Ok(NBTTag::String(tag::String::Bytes(bytes)))
-                } else {
-                    Ok(NBTTag::String(tag::String::Utf8(string?)))
-                }
-            }
-            10 => {
-                let mut map = HashMap::new();
-                loop {
-                    let content_type = r.u8(buf)?;
-                    if content_type == 0 {
-                        break;
-                    }
-                    let name = r.string(buf)?;
-                    let value = Self::read_inner(buf, content_type, r)
-                        .map_err(|err| err.prepend(PathPart::MapKey(name.clone())))?;
-                    map.insert(name, value);
-                }
-                Ok(NBTTag::Compound(map.into()))
-            }
-            9 => {
-                let content_type = r.u8(buf)?;
-                let len = r.i32(buf)?;
-                if len < 0 {
-                    return Err(ErrorPath::new(ReadError::SeqLengthViolation(
-                        i32::MAX as usize,
-                        len as usize,
-                    )));
-                }
-                let mut vec = Vec::with_capacity(len as usize);
-                for i in 0..len {
-                    vec.push(
-                        Self::read_inner(buf, content_type, r)
-                            .map_err(|err| err.prepend(PathPart::Element(i as usize)))?,
-                    );
-                }
-                Ok(NBTTag::List(vec.into()))
-            }
-            7 => Ok(NBTTag::ByteArray(r.u8_vec(buf)?.into())),
-            11 => Ok(NBTTag::IntArray(r.i32_vec(buf)?.into())),
-            12 => Ok(NBTTag::LongArray(r.i64_vec(buf)?.into())),
-            other => Err(ErrorPath::new(ReadError::UnknownTagType(other))),
-        }
-    }
-
-    /// Internal function used to write NBT data. Slightly differs from [Self::write].
-    fn write_inner(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
         match self {
-            Self::Byte(x) => w.write_u8(buf, x.0)?,
-            Self::Short(x) => w.write_i16(buf, x.0)?,
-            Self::Int(x) => w.write_i32(buf, x.0)?,
-            Self::Long(x) => w.write_i64(buf, x.0)?,
-            Self::Float(x) => w.write_f32(buf, x.0)?,
-            Self::Double(x) => w.write_f64(buf, x.0)?,
-            Self::String(tag::String::Utf8(x)) => w.write_string(buf, x.as_str())?,
-            Self::String(tag::String::Bytes(x)) => {
-                if x.len() > i16::MAX as usize {
-                    return Err(ErrorPath::new(WriteError::SeqLengthViolation(
-                        i16::MAX as usize,
-                        x.len(),
-                    )));
-                }
-                w.write_i16(buf, x.len() as i16)?;
-                for (i, b) in x.iter().enumerate() {
-                    w.write_u8(buf, *b)
-                        .map_err(|err| err.prepend(PathPart::Element(i)))?;
-                }
-            }
-            Self::Compound(x) => {
-                for (name, val) in &x.0 {
-                    w.write_u8(buf, val.tag_id())?;
-                    w.write_string(buf, name)?;
-                    val.write_inner(buf, w)?;
-                }
-                w.write_end(buf)?;
-            }
-            Self::List(x) => {
-                let first_id = if x.0.is_empty() {
-                    NBTTag::Byte(0.into()).tag_id()
-                } else {
-                    x.0[0].tag_id()
-                };
-
-                w.write_u8(buf, first_id)?;
-                w.write_i32(buf, x.len() as i32)?;
-                for (i, v) in x.0.iter().enumerate() {
-                    if v.tag_id() != first_id {
-                        return Err(ErrorPath::new_with_path(
-                            WriteError::UnexpectedTag(
-                                x[0].tag_type().to_string(),
-                                v.tag_type().to_string(),
-                            ),
-                            Path::from_single(PathPart::Element(i)),
-                        ));
-                    }
-                    v.write_inner(buf, w)?;
-                }
-            }
-            Self::ByteArray(x) => w.write_u8_vec(buf, &x.0)?,
-            Self::IntArray(x) => w.write_i32_vec(buf, &x.0)?,
-            Self::LongArray(x) => w.write_i64_vec(buf, &x.0)?,
-        };
-        Ok(())
+            NBTTag::Byte(tag) => tag.write_payload(buf, w),
+            NBTTag::Short(tag) => tag.write_payload(buf, w),
+            NBTTag::Int(tag) => tag.write_payload(buf, w),
+            NBTTag::Long(tag) => tag.write_payload(buf, w),
+            NBTTag::Float(tag) => tag.write_payload(buf, w),
+            NBTTag::Double(tag) => tag.write_payload(buf, w),
+            NBTTag::String(tag) => tag.write_payload(buf, w),
+            NBTTag::Compound(tag) => tag.write_payload(buf, w),
+            NBTTag::List(tag) => tag.write_payload(buf, w),
+            NBTTag::ByteArray(tag) => tag.write_payload(buf, w),
+            NBTTag::IntArray(tag) => tag.write_payload(buf, w),
+            NBTTag::LongArray(tag) => tag.write_payload(buf, w),
+        }
     }
 
     /// Gets the discriminator of a [NBTTag]'s type used for encoding and decoding.
@@ -258,5 +173,196 @@ impl NBTTag {
 impl Default for NBTTag {
     fn default() -> Self {
         Self::Compound(HashMap::new().into())
+    }
+}
+
+/// A trait implemented on all NBT tags to define reading/writing their payload data.
+trait TagIo: Sized {
+    /// Attempts to read the payload data from a buffer into an NBT value using the specified
+    /// [Reader] encoding.
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self>;
+    /// Attempts to write the NBT data into a buffer using the specified [Writer] encoding.
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res;
+}
+impl TagIo for tag::Byte {
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        Ok(r.u8(buf)?.into())
+    }
+
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+        w.write_u8(buf, self.0)
+    }
+}
+impl TagIo for tag::Short {
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        Ok(r.i16(buf)?.into())
+    }
+
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+        w.write_i16(buf, self.0)
+    }
+}
+impl TagIo for tag::Int {
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        Ok(r.i32(buf)?.into())
+    }
+
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+        w.write_i32(buf, self.0)
+    }
+}
+impl TagIo for tag::Long {
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        Ok(r.i64(buf)?.into())
+    }
+
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+        w.write_i64(buf, self.0)
+    }
+}
+impl TagIo for tag::Float {
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        Ok(r.f32(buf)?.into())
+    }
+
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+        w.write_f32(buf, self.0)
+    }
+}
+impl TagIo for tag::Double {
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        Ok(r.f64(buf)?.into())
+    }
+
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+        w.write_f64(buf, self.0)
+    }
+}
+impl TagIo for tag::String {
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        let string = r.string(buf);
+        if let Err(ErrorPath {
+            inner: ReadError::InvalidString(bytes),
+            path: _,
+        }) = string
+        {
+            Ok(tag::String::Bytes(bytes))
+        } else {
+            Ok(tag::String::Utf8(string?))
+        }
+    }
+
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+        match self {
+            tag::String::Utf8(x) => w.write_string(buf, x.as_str()),
+            tag::String::Bytes(x) => {
+                if x.len() > i16::MAX as usize {
+                    return Err(ErrorPath::new(WriteError::SeqLengthViolation(
+                        i16::MAX as usize,
+                        x.len(),
+                    )));
+                }
+                w.write_i16(buf, x.len() as i16)?;
+                for (i, b) in x.iter().enumerate() {
+                    w.write_u8(buf, *b)
+                        .map_err(|err| err.prepend(PathPart::Element(i)))?;
+                }
+                Ok(())
+            }
+        }
+    }
+}
+impl TagIo for tag::List {
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        let content_type = r.u8(buf)?;
+        let len = r.i32(buf)?;
+        if len < 0 {
+            return Err(ErrorPath::new(ReadError::SeqLengthViolation(
+                i32::MAX as usize,
+                len as usize,
+            )));
+        }
+        let mut vec = Vec::with_capacity(len as usize);
+        for i in 0..len {
+            vec.push(
+                NBTTag::read_payload(content_type, buf, r)
+                    .map_err(|err| err.prepend(PathPart::Element(i as usize)))?,
+            );
+        }
+        Ok(vec.into())
+    }
+
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+        let first_id = if self.0.is_empty() {
+            NBTTag::Byte(0.into()).tag_id()
+        } else {
+            self.0[0].tag_id()
+        };
+
+        w.write_u8(buf, first_id)?;
+        w.write_i32(buf, self.len() as i32)?;
+        for (i, v) in self.0.iter().enumerate() {
+            if v.tag_id() != first_id {
+                return Err(ErrorPath::new_with_path(
+                    WriteError::UnexpectedTag(self[0].tag_type(), v.tag_type()),
+                    Path::from_single(PathPart::Element(i)),
+                ));
+            }
+            v.write_payload(buf, w)?;
+        }
+        Ok(())
+    }
+}
+impl TagIo for tag::Compound {
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        let mut map = HashMap::new();
+        loop {
+            let content_type = r.u8(buf)?;
+            if content_type == 0 {
+                break;
+            }
+            let name = r.string(buf)?;
+            let value = NBTTag::read_payload(content_type, buf, r)
+                .map_err(|err| err.prepend(PathPart::MapKey(name.clone())))?;
+            map.insert(name, value);
+        }
+        Ok(map.into())
+    }
+
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+        for (name, val) in &self.0 {
+            w.write_u8(buf, val.tag_id())?;
+            w.write_string(buf, name)?;
+            val.write_payload(buf, w)?;
+        }
+        w.write_end(buf)?;
+        Ok(())
+    }
+}
+impl TagIo for tag::ByteArray {
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        Ok(r.u8_vec(buf)?.into())
+    }
+
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+        w.write_u8_vec(buf, &self.0)
+    }
+}
+impl TagIo for tag::IntArray {
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        Ok(r.i32_vec(buf)?.into())
+    }
+
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+        w.write_i32_vec(buf, &self.0)
+    }
+}
+impl TagIo for tag::LongArray {
+    fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
+        Ok(r.i64_vec(buf)?.into())
+    }
+
+    fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+        w.write_i64_vec(buf, &self.0)
     }
 }

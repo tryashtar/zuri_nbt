@@ -4,6 +4,8 @@ use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use thiserror::Error;
 
+use crate::NBTTagType;
+
 /// An error that can occur while reading NBT data from a buffer.
 #[derive(Error, Debug)]
 pub enum ReadError {
@@ -16,7 +18,7 @@ pub enum ReadError {
     /// Occurs when the reader finds a tag type while reading that is not part of the expected tag
     /// types.
     #[error("expected tag {0}, found {1}")]
-    UnexpectedTag(String, String),
+    UnexpectedTag(u8, u8),
     /// The length prefix found in the buffer for a sequence is not in the acceptable bounds for
     /// that type.
     #[error("sequence length must be between 0 and {0}, but got {1}")]
@@ -37,7 +39,7 @@ pub enum WriteError {
     Io(#[from] std::io::Error),
     /// Occurs when a list is made up of NBT tags with differing types.
     #[error("expected tag {0}, found {1}")]
-    UnexpectedTag(String, String),
+    UnexpectedTag(NBTTagType, NBTTagType),
     /// The length of a  sequence (such as list or string) is not in the acceptable bounds for that
     /// type.
     #[error("sequence length must be between 0 and {0}, but got {1}")]

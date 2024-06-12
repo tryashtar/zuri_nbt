@@ -26,10 +26,7 @@ pub trait Reader {
     fn end(&mut self, buf: &mut impl Read) -> Res<()> {
         let t = self.u8(buf)?;
         if t != 0 {
-            return Err(ErrorPath::new(ReadError::UnexpectedTag(
-                "END (0x00)".to_string(),
-                format!("{t:#04x}"),
-            )));
+            return Err(ErrorPath::new(ReadError::UnexpectedTag(0, t)));
         }
         Ok(())
     }

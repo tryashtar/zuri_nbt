@@ -3,7 +3,7 @@
 use crate::decode::Reader;
 use crate::encode::Writer;
 use crate::err::{ErrorPath, ReadError};
-use crate::{decode, encode, tag, NBTTag, NBTTagType};
+use crate::{decode, encode, tag, NBTTag, NBTTagType, TagIo};
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::ops::{Deref, DerefMut};
@@ -135,7 +135,7 @@ impl DerefMut for tag::List {
 }
 
 macro_rules! impl_tagtype {
-    ($typ:ty, $enum_variant:path, $enum_variant2:path) => {
+    ($typ:ty, $enum_variant:path, $variant_num:literal) => {
         impl $typ {
             /// Returns the [NBTTagType] associated with this tag.
             #[inline]
@@ -148,47 +148,37 @@ macro_rules! impl_tagtype {
             /// Attempts to read the data from a buffer into an NBT value using the specified
             /// [Reader] encoding.
             ///
-            /// Returns an error if the 'parent' nbt tag is not the same type as the type this
-            /// method was called on.
+            /// Returns an error if the variant byte doesn't match this tag type.
             pub fn read(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
-                let nbt = NBTTag::read(buf, r)?;
-                let typ = nbt.tag_type().clone();
-                if let $enum_variant2(t) = nbt {
-                    Ok(t)
-                } else {
-                    let t = $enum_variant;
-                    Err(ErrorPath::new(ReadError::UnexpectedTag(
-                        t.to_string(),
-                        typ.to_string(),
-                    )))
+                let tag_id = r.u8(buf)?;
+                if tag_id != $variant_num {
+                    return Err(ErrorPath::new(ReadError::UnexpectedTag(
+                        $variant_num,
+                        tag_id,
+                    )));
                 }
+                r.string(buf)?;
+                Self::read_payload(buf, r)
             }
 
             /// Attempts to write the NBT data into a buffer using the specified [Writer] encoding.
-            ///
-            /// Consumes the tag, as it would otherwise require a copy.
-            pub fn write(self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
-                let nbt: NBTTag = self.into();
-                nbt.write(buf, w)
+            pub fn write(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
+                w.write_u8(buf, $variant_num)?;
+                w.write_string(buf, "")?;
+                self.write_payload(buf, w)
             }
         }
     };
-    ($(($typ:ty, $enum_variant:path, $enum_variant2:path)$(,)?)*) => {
-        $(impl_tagtype!($typ, $enum_variant, $enum_variant2);)*
-    };
 }
-
-impl_tagtype!(
-    (tag::Byte, NBTTagType::Byte, NBTTag::Byte),
-    (tag::Short, NBTTagType::Short, NBTTag::Short),
-    (tag::Int, NBTTagType::Int, NBTTag::Int),
-    (tag::Long, NBTTagType::Long, NBTTag::Long),
-    (tag::Float, NBTTagType::Float, NBTTag::Float),
-    (tag::Double, NBTTagType::Double, NBTTag::Double),
-    (tag::String, NBTTagType::String, NBTTag::String),
-    (tag::Compound, NBTTagType::Compound, NBTTag::Compound),
-    (tag::List, NBTTagType::List, NBTTag::List),
-    (tag::ByteArray, NBTTagType::ByteArray, NBTTag::ByteArray),
-    (tag::IntArray, NBTTagType::IntArray, NBTTag::IntArray),
-    (tag::LongArray, NBTTagType::LongArray, NBTTag::LongArray),
-);
+impl_tagtype!(tag::Byte, NBTTagType::Byte, 1);
+impl_tagtype!(tag::Short, NBTTagType::Short, 2);
+impl_tagtype!(tag::Int, NBTTagType::Int, 3);
+impl_tagtype!(tag::Long, NBTTagType::Long, 4);
+impl_tagtype!(tag::Float, NBTTagType::Float, 5);
+impl_tagtype!(tag::Double, NBTTagType::Double, 6);
+impl_tagtype!(tag::String, NBTTagType::String, 8);
+impl_tagtype!(tag::Compound, NBTTagType::Compound, 10);
+impl_tagtype!(tag::List, NBTTagType::List, 9);
+impl_tagtype!(tag::ByteArray, NBTTagType::ByteArray, 7);
+impl_tagtype!(tag::IntArray, NBTTagType::IntArray, 11);
+impl_tagtype!(tag::LongArray, NBTTagType::LongArray, 12);
