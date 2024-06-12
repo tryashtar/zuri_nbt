@@ -102,6 +102,12 @@ impl From<&str> for tag::String {
     }
 }
 
+impl From<String> for tag::String {
+    fn from(value: String) -> Self {
+        tag::String::Utf8(value)
+    }
+}
+
 impl<T: Into<NBTTag>> From<Vec<T>> for tag::List {
     fn from(value: Vec<T>) -> Self {
         tag::List(value.into_iter().map(|v| v.into()).collect())
