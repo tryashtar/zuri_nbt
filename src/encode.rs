@@ -46,7 +46,7 @@ pub trait Writer {
     }
 
     /// Writes variable-length array of 8-bit unsigned integers.
-    fn write_u8_vec(&mut self, buf: &mut impl Write, x: &Vec<u8>) -> Res {
+    fn write_u8_vec(&mut self, buf: &mut impl Write, x: &[u8]) -> Res {
         if x.len() > i32::MAX as usize {
             return Err(ErrorPath::new(WriteError::SeqLengthViolation(
                 i32::MAX as usize,
@@ -62,7 +62,7 @@ pub trait Writer {
     }
 
     /// Writes variable-length array of 32-bit signed integers.
-    fn write_i32_vec(&mut self, buf: &mut impl Write, x: &Vec<i32>) -> Res {
+    fn write_i32_vec(&mut self, buf: &mut impl Write, x: &[i32]) -> Res {
         if x.len() > i32::MAX as usize {
             return Err(ErrorPath::new(WriteError::SeqLengthViolation(
                 i32::MAX as usize,
@@ -78,7 +78,7 @@ pub trait Writer {
     }
 
     /// Writes variable-length array of 64-bit signed integers.
-    fn write_i64_vec(&mut self, buf: &mut impl Write, x: &Vec<i64>) -> Res {
+    fn write_i64_vec(&mut self, buf: &mut impl Write, x: &[i64]) -> Res {
         if x.len() > i32::MAX as usize {
             return Err(ErrorPath::new(WriteError::SeqLengthViolation(
                 i32::MAX as usize,

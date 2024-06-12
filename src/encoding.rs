@@ -9,9 +9,7 @@ use crate::encode::Writer;
 use crate::err::{ErrorPath, PathPart, ReadError, WriteError};
 use crate::{decode, encode};
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use bytestream::{ByteOrder, StreamReader, StreamWriter};
 use std::io::{Read, Write};
-use std::mem;
 
 /// An NBT encoding that encodes all basic types using big endian encoding.
 ///
@@ -312,7 +310,7 @@ mod tests {
     use crate::decode::Reader;
     use crate::encode::Writer;
     use crate::encoding::{BigEndian, LittleEndian, NetworkLittleEndian};
-    use crate::{tag, NBTTag};
+    use crate::{err, tag, NBTTag};
 
     #[test]
     fn test_big_endian() {
@@ -348,5 +346,22 @@ mod tests {
             NBTTag::read(&mut buf.as_slice(), &mut T::default()).unwrap(),
             nbt
         );
+    }
+
+    #[test]
+    fn test_invalid_tagtype() {
+        let mut valid_buf: Vec<u8> = vec![0x03, 0x00, 0x01, 0x61, 0x12, 0x34, 0x56, 0x78];
+        let nbt = NBTTag::read(&mut valid_buf.as_slice(), &mut BigEndian).unwrap();
+        assert!(matches!(nbt, NBTTag::Int(tag::Int(0x12345678))));
+
+        let mut invalid_buf: Vec<u8> = vec![0x15, 0x00, 0x01, 0x61, 0x12, 0x34, 0x56, 0x78];
+        let nbt = NBTTag::read(&mut invalid_buf.as_slice(), &mut BigEndian);
+        assert!(matches!(
+            nbt,
+            Err(err::ErrorPath {
+                inner: err::ReadError::UnknownTagType(0x15),
+                path: _
+            })
+        ))
     }
 }

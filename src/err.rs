@@ -11,6 +11,9 @@ pub enum ReadError {
     /// Occurs when an IO error occurs.
     #[error("{0}")]
     Io(#[from] std::io::Error),
+    /// Occurs when attempting to read a tag with an unknown type.
+    #[error("unknown tag type {0}")]
+    UnknownTagType(u8),
     /// Occurs when the reader finds a tag type while reading that is not part of the expected tag
     /// types.
     #[error("expected tag {0}, found {1}")]

@@ -118,13 +118,13 @@ impl NBTTag {
 
     /// Internal function used to read NBT data. Slightly differs from [Self::read].
     fn read_inner(buf: &mut impl Read, tag_id: u8, r: &mut impl Reader) -> decode::Res<Self> {
-        Ok(match tag_id {
-            1 => NBTTag::Byte(r.u8(buf)?.into()),
-            2 => NBTTag::Short(r.i16(buf)?.into()),
-            3 => NBTTag::Int(r.i32(buf)?.into()),
-            4 => NBTTag::Long(r.i64(buf)?.into()),
-            5 => NBTTag::Float(r.f32(buf)?.into()),
-            6 => NBTTag::Double(r.f64(buf)?.into()),
+        match tag_id {
+            1 => Ok(NBTTag::Byte(r.u8(buf)?.into())),
+            2 => Ok(NBTTag::Short(r.i16(buf)?.into())),
+            3 => Ok(NBTTag::Int(r.i32(buf)?.into())),
+            4 => Ok(NBTTag::Long(r.i64(buf)?.into())),
+            5 => Ok(NBTTag::Float(r.f32(buf)?.into())),
+            6 => Ok(NBTTag::Double(r.f64(buf)?.into())),
             8 => {
                 let string = r.string(buf);
                 if let Err(ErrorPath {
@@ -132,9 +132,9 @@ impl NBTTag {
                     path: _,
                 }) = string
                 {
-                    NBTTag::String(tag::String::Bytes(utf8.into_bytes()))
+                    Ok(NBTTag::String(tag::String::Bytes(utf8.into_bytes())))
                 } else {
-                    NBTTag::String(tag::String::Utf8(string?))
+                    Ok(NBTTag::String(tag::String::Utf8(string?)))
                 }
             }
             10 => {
@@ -149,7 +149,7 @@ impl NBTTag {
                         .map_err(|err| err.prepend(PathPart::MapKey(name.clone())))?;
                     map.insert(name, value);
                 }
-                NBTTag::Compound(map.into())
+                Ok(NBTTag::Compound(map.into()))
             }
             9 => {
                 let content_type = r.u8(buf)?;
@@ -167,13 +167,13 @@ impl NBTTag {
                             .map_err(|err| err.prepend(PathPart::Element(i as usize)))?,
                     );
                 }
-                NBTTag::List(vec.into())
+                Ok(NBTTag::List(vec.into()))
             }
-            7 => NBTTag::ByteArray(r.u8_vec(buf)?.into()),
-            11 => NBTTag::IntArray(r.i32_vec(buf)?.into()),
-            12 => NBTTag::LongArray(r.i64_vec(buf)?.into()),
-            _ => panic!("Unknown tag type {}", tag_id),
-        })
+            7 => Ok(NBTTag::ByteArray(r.u8_vec(buf)?.into())),
+            11 => Ok(NBTTag::IntArray(r.i32_vec(buf)?.into())),
+            12 => Ok(NBTTag::LongArray(r.i64_vec(buf)?.into())),
+            other => Err(ErrorPath::new(ReadError::UnknownTagType(other))),
+        }
     }
 
     /// Internal function used to write NBT data. Slightly differs from [Self::write].
