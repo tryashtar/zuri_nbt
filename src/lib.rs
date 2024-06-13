@@ -26,7 +26,7 @@ pub mod view;
 /// An enum representing all possible NBT data.
 #[derive(Debug, Clone, PartialEq)]
 pub enum NBTTag {
-    /// An 8-bit unsigned integer.
+    /// An 8-bit signed integer.
     Byte(tag::Byte),
     /// A 16-bit signed integer.
     Short(tag::Short),
@@ -186,11 +186,11 @@ trait TagIo: Sized {
 }
 impl TagIo for tag::Byte {
     fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
-        Ok(r.u8(buf)?.into())
+        Ok(r.i8(buf)?.into())
     }
 
     fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
-        w.write_u8(buf, self.0)
+        w.write_i8(buf, self.0)
     }
 }
 impl TagIo for tag::Short {
@@ -341,11 +341,11 @@ impl TagIo for tag::Compound {
 }
 impl TagIo for tag::ByteArray {
     fn read_payload(buf: &mut impl Read, r: &mut impl Reader) -> decode::Res<Self> {
-        Ok(r.u8_vec(buf)?.into())
+        Ok(r.i8_vec(buf)?.into())
     }
 
     fn write_payload(&self, buf: &mut impl Write, w: &mut impl Writer) -> encode::Res {
-        w.write_u8_vec(buf, &self.0)
+        w.write_i8_vec(buf, &self.0)
     }
 }
 impl TagIo for tag::IntArray {

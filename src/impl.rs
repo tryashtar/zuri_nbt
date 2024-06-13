@@ -83,14 +83,14 @@ macro_rules! impl_newtype_conv {
 }
 
 impl_newtype_conv!(
-    (u8, tag::Byte),
+    (i8, tag::Byte),
     (i16, tag::Short),
     (i32, tag::Int),
     (i64, tag::Long),
     (f32, tag::Float),
     (f64, tag::Double),
     (HashMap<String, NBTTag>, tag::Compound),
-    (Vec<u8>, tag::ByteArray),
+    (Vec<i8>, tag::ByteArray),
     (Vec<i32>, tag::IntArray),
     (Vec<i64>, tag::LongArray),
 );

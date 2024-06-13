@@ -268,7 +268,7 @@ impl<'a> View<'a> {
     }
 
     /// Returns the byte value of the tag if the underlying tag is a [tag::Byte].
-    pub fn byte(&self) -> Result<u8, ViewError> {
+    pub fn byte(&self) -> Result<i8, ViewError> {
         match &self.tag {
             InnerView::Ok(Cow::Borrowed(NBTTag::Byte(s))) => Ok(s.0),
             InnerView::Ok(Cow::Owned(NBTTag::Byte(s))) => Ok(s.0),
@@ -460,7 +460,7 @@ impl<'a> Iterator for ViewIterator<'a> {
 enum InnerViewIterator<'a> {
     Compound(hash_map::Iter<'a, String, NBTTag>),
     List(slice::Iter<'a, NBTTag>),
-    ByteArray(slice::Iter<'a, u8>),
+    ByteArray(slice::Iter<'a, i8>),
     IntArray(slice::Iter<'a, i32>),
     LongArray(slice::Iter<'a, i64>),
     Single(&'a NBTTag),

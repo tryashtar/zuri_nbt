@@ -3,9 +3,9 @@ use std::collections::HashMap;
 
 use crate::NBTTag;
 
-/// An 8-bit unsigned integer.
+/// An 8-bit signed integer.
 #[derive(Default, Debug, Copy, Clone, Eq, PartialEq)]
-pub struct Byte(pub u8);
+pub struct Byte(pub i8);
 
 /// A 16-bit signed integer.
 #[derive(Default, Debug, Copy, Clone, Eq, PartialEq)]
@@ -51,9 +51,9 @@ pub struct Compound(pub HashMap<std::string::String, NBTTag>);
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct List(pub Vec<NBTTag>);
 
-/// A variable-length array containing 8-bit unsigned integers.
+/// A variable-length array containing 8-bit signed integers.
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
-pub struct ByteArray(pub Vec<u8>);
+pub struct ByteArray(pub Vec<i8>);
 
 /// A variable-length array containing 32-bit signed integers.
 #[derive(Default, Debug, Clone, Eq, PartialEq)]

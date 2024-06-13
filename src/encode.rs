@@ -12,6 +12,8 @@ pub type Res = Result<(), ErrorPath<WriteError>>;
 pub trait Writer {
     /// Writes an 8-bit unsigned integer.
     fn write_u8(&mut self, buf: &mut impl Write, x: u8) -> Res;
+    /// Writes an 8-bit signed integer.
+    fn write_i8(&mut self, buf: &mut impl Write, x: i8) -> Res;
     /// Writes a 16-bit signed integer.
     fn write_i16(&mut self, buf: &mut impl Write, x: i16) -> Res;
     /// Writes a 32-bit signed integer.
@@ -41,6 +43,22 @@ pub trait Writer {
         self.write_i16(buf, modified_bytes.len() as i16)?;
         for (i, b) in modified_bytes.iter().enumerate() {
             self.write_u8(buf, *b)
+                .map_err(|err| err.prepend(PathPart::Element(i)))?;
+        }
+        Ok(())
+    }
+
+    /// Writes variable-length array of 8-bit signed integers.
+    fn write_i8_vec(&mut self, buf: &mut impl Write, x: &[i8]) -> Res {
+        if x.len() > i32::MAX as usize {
+            return Err(ErrorPath::new(WriteError::SeqLengthViolation(
+                i32::MAX as usize,
+                x.len(),
+            )));
+        }
+        self.write_i32(buf, x.len() as i32)?;
+        for (i, v) in x.iter().enumerate() {
+            self.write_i8(buf, *v)
                 .map_err(|err| err.prepend(PathPart::Element(i)))?;
         }
         Ok(())

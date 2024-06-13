@@ -11,6 +11,8 @@ pub type Res<T> = Result<T, ErrorPath<ReadError>>;
 pub trait Reader {
     /// Reads an 8-bit unsigned integer.
     fn u8(&mut self, buf: &mut impl Read) -> Res<u8>;
+    /// Reads an 8-bit signed integer.
+    fn i8(&mut self, buf: &mut impl Read) -> Res<i8>;
     /// Reads a 16-bit signed integer.
     fn i16(&mut self, buf: &mut impl Read) -> Res<i16>;
     /// Reads a 32-bit signed integer.
@@ -68,6 +70,27 @@ pub trait Reader {
         for i in 0..len {
             vec_buf.push(
                 self.u8(buf)
+                    .map_err(|err| err.prepend(PathPart::Element(i as usize)))?,
+            );
+        }
+
+        Ok(vec_buf)
+    }
+
+    /// Reads variable-length array of 8-bit signed integers.
+    fn i8_vec(&mut self, buf: &mut impl Read) -> Res<Vec<i8>> {
+        let len = self.i32(buf)?;
+        if len < 0 {
+            return Err(ErrorPath::new(ReadError::SeqLengthViolation(
+                i32::MAX as usize,
+                len as usize,
+            )));
+        }
+
+        let mut vec_buf = Vec::with_capacity(len as usize);
+        for i in 0..len {
+            vec_buf.push(
+                self.i8(buf)
                     .map_err(|err| err.prepend(PathPart::Element(i as usize)))?,
             );
         }
