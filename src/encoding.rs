@@ -34,160 +34,160 @@ pub struct LittleEndian;
 pub struct NetworkLittleEndian;
 
 impl Reader for BigEndian {
-    fn u8(&mut self, buf: &mut impl Read) -> decode::Res<u8> {
+    fn u8(&self, buf: &mut impl Read) -> decode::Res<u8> {
         buf.read_u8().map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn i8(&mut self, buf: &mut impl Read) -> decode::Res<i8> {
+    fn i8(&self, buf: &mut impl Read) -> decode::Res<i8> {
         buf.read_i8().map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn i16(&mut self, buf: &mut impl Read) -> decode::Res<i16> {
+    fn i16(&self, buf: &mut impl Read) -> decode::Res<i16> {
         buf.read_i16::<byteorder::BigEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn i32(&mut self, buf: &mut impl Read) -> decode::Res<i32> {
+    fn i32(&self, buf: &mut impl Read) -> decode::Res<i32> {
         buf.read_i32::<byteorder::BigEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn i64(&mut self, buf: &mut impl Read) -> decode::Res<i64> {
+    fn i64(&self, buf: &mut impl Read) -> decode::Res<i64> {
         buf.read_i64::<byteorder::BigEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn f32(&mut self, buf: &mut impl Read) -> decode::Res<f32> {
+    fn f32(&self, buf: &mut impl Read) -> decode::Res<f32> {
         buf.read_f32::<byteorder::BigEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn f64(&mut self, buf: &mut impl Read) -> decode::Res<f64> {
+    fn f64(&self, buf: &mut impl Read) -> decode::Res<f64> {
         buf.read_f64::<byteorder::BigEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 }
 
 impl Writer for BigEndian {
-    fn write_u8(&mut self, buf: &mut impl Write, x: u8) -> encode::Res {
+    fn write_u8(&self, buf: &mut impl Write, x: u8) -> encode::Res {
         buf.write_u8(x).map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_i8(&mut self, buf: &mut impl Write, x: i8) -> encode::Res {
+    fn write_i8(&self, buf: &mut impl Write, x: i8) -> encode::Res {
         buf.write_i8(x).map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_i16(&mut self, buf: &mut impl Write, x: i16) -> encode::Res {
+    fn write_i16(&self, buf: &mut impl Write, x: i16) -> encode::Res {
         buf.write_i16::<byteorder::BigEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_i32(&mut self, buf: &mut impl Write, x: i32) -> encode::Res {
+    fn write_i32(&self, buf: &mut impl Write, x: i32) -> encode::Res {
         buf.write_i32::<byteorder::BigEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_i64(&mut self, buf: &mut impl Write, x: i64) -> encode::Res {
+    fn write_i64(&self, buf: &mut impl Write, x: i64) -> encode::Res {
         buf.write_i64::<byteorder::BigEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_f32(&mut self, buf: &mut impl Write, x: f32) -> encode::Res {
+    fn write_f32(&self, buf: &mut impl Write, x: f32) -> encode::Res {
         buf.write_f32::<byteorder::BigEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_f64(&mut self, buf: &mut impl Write, x: f64) -> encode::Res {
+    fn write_f64(&self, buf: &mut impl Write, x: f64) -> encode::Res {
         buf.write_f64::<byteorder::BigEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 }
 
 impl Reader for LittleEndian {
-    fn u8(&mut self, buf: &mut impl Read) -> decode::Res<u8> {
+    fn u8(&self, buf: &mut impl Read) -> decode::Res<u8> {
         buf.read_u8().map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn i8(&mut self, buf: &mut impl Read) -> decode::Res<i8> {
+    fn i8(&self, buf: &mut impl Read) -> decode::Res<i8> {
         buf.read_i8().map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn i16(&mut self, buf: &mut impl Read) -> decode::Res<i16> {
+    fn i16(&self, buf: &mut impl Read) -> decode::Res<i16> {
         buf.read_i16::<byteorder::LittleEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn i32(&mut self, buf: &mut impl Read) -> decode::Res<i32> {
+    fn i32(&self, buf: &mut impl Read) -> decode::Res<i32> {
         buf.read_i32::<byteorder::LittleEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn i64(&mut self, buf: &mut impl Read) -> decode::Res<i64> {
+    fn i64(&self, buf: &mut impl Read) -> decode::Res<i64> {
         buf.read_i64::<byteorder::LittleEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn f32(&mut self, buf: &mut impl Read) -> decode::Res<f32> {
+    fn f32(&self, buf: &mut impl Read) -> decode::Res<f32> {
         buf.read_f32::<byteorder::LittleEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn f64(&mut self, buf: &mut impl Read) -> decode::Res<f64> {
+    fn f64(&self, buf: &mut impl Read) -> decode::Res<f64> {
         buf.read_f64::<byteorder::LittleEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 }
 
 impl Writer for LittleEndian {
-    fn write_u8(&mut self, buf: &mut impl Write, x: u8) -> encode::Res {
+    fn write_u8(&self, buf: &mut impl Write, x: u8) -> encode::Res {
         buf.write_u8(x).map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_i8(&mut self, buf: &mut impl Write, x: i8) -> encode::Res {
+    fn write_i8(&self, buf: &mut impl Write, x: i8) -> encode::Res {
         buf.write_i8(x).map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_i16(&mut self, buf: &mut impl Write, x: i16) -> encode::Res {
+    fn write_i16(&self, buf: &mut impl Write, x: i16) -> encode::Res {
         buf.write_i16::<byteorder::LittleEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_i32(&mut self, buf: &mut impl Write, x: i32) -> encode::Res {
+    fn write_i32(&self, buf: &mut impl Write, x: i32) -> encode::Res {
         buf.write_i32::<byteorder::LittleEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_i64(&mut self, buf: &mut impl Write, x: i64) -> encode::Res {
+    fn write_i64(&self, buf: &mut impl Write, x: i64) -> encode::Res {
         buf.write_i64::<byteorder::LittleEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_f32(&mut self, buf: &mut impl Write, x: f32) -> encode::Res {
+    fn write_f32(&self, buf: &mut impl Write, x: f32) -> encode::Res {
         buf.write_f32::<byteorder::LittleEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_f64(&mut self, buf: &mut impl Write, x: f64) -> encode::Res {
+    fn write_f64(&self, buf: &mut impl Write, x: f64) -> encode::Res {
         buf.write_f64::<byteorder::LittleEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 }
 
 impl Reader for NetworkLittleEndian {
-    fn u8(&mut self, buf: &mut impl Read) -> decode::Res<u8> {
+    fn u8(&self, buf: &mut impl Read) -> decode::Res<u8> {
         buf.read_u8().map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn i8(&mut self, buf: &mut impl Read) -> decode::Res<i8> {
+    fn i8(&self, buf: &mut impl Read) -> decode::Res<i8> {
         buf.read_i8().map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn i16(&mut self, buf: &mut impl Read) -> decode::Res<i16> {
+    fn i16(&self, buf: &mut impl Read) -> decode::Res<i16> {
         buf.read_i16::<byteorder::LittleEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn i32(&mut self, buf: &mut impl Read) -> decode::Res<i32> {
+    fn i32(&self, buf: &mut impl Read) -> decode::Res<i32> {
         let mut v: u32 = 0;
         for i in (0..35).step_by(7) {
             let b = self.u8(buf)?;
@@ -203,7 +203,7 @@ impl Reader for NetworkLittleEndian {
         )))
     }
 
-    fn i64(&mut self, buf: &mut impl Read) -> decode::Res<i64> {
+    fn i64(&self, buf: &mut impl Read) -> decode::Res<i64> {
         let mut v: u64 = 0;
         for i in (0..70).step_by(7) {
             let b = self.u8(buf)?;
@@ -219,17 +219,17 @@ impl Reader for NetworkLittleEndian {
         )))
     }
 
-    fn f32(&mut self, buf: &mut impl Read) -> decode::Res<f32> {
+    fn f32(&self, buf: &mut impl Read) -> decode::Res<f32> {
         buf.read_f32::<byteorder::LittleEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn f64(&mut self, buf: &mut impl Read) -> decode::Res<f64> {
+    fn f64(&self, buf: &mut impl Read) -> decode::Res<f64> {
         buf.read_f64::<byteorder::LittleEndian>()
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn string(&mut self, buf: &mut impl Read) -> decode::Res<String> {
+    fn string(&self, buf: &mut impl Read) -> decode::Res<String> {
         let len = 'var_len: {
             let mut v: u32 = 0;
             for i in (0..35).step_by(7) {
@@ -261,20 +261,20 @@ impl Reader for NetworkLittleEndian {
 }
 
 impl Writer for NetworkLittleEndian {
-    fn write_u8(&mut self, buf: &mut impl Write, x: u8) -> encode::Res {
+    fn write_u8(&self, buf: &mut impl Write, x: u8) -> encode::Res {
         buf.write_u8(x).map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_i8(&mut self, buf: &mut impl Write, x: i8) -> encode::Res {
+    fn write_i8(&self, buf: &mut impl Write, x: i8) -> encode::Res {
         buf.write_i8(x).map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_i16(&mut self, buf: &mut impl Write, x: i16) -> encode::Res {
+    fn write_i16(&self, buf: &mut impl Write, x: i16) -> encode::Res {
         buf.write_i16::<byteorder::LittleEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_i32(&mut self, buf: &mut impl Write, x: i32) -> encode::Res {
+    fn write_i32(&self, buf: &mut impl Write, x: i32) -> encode::Res {
         let mut u = (x as u32) << 1;
         if x < 0 {
             u = !u;
@@ -287,7 +287,7 @@ impl Writer for NetworkLittleEndian {
         Ok(())
     }
 
-    fn write_i64(&mut self, buf: &mut impl Write, x: i64) -> encode::Res {
+    fn write_i64(&self, buf: &mut impl Write, x: i64) -> encode::Res {
         let mut u = (x as u64) << 1;
         if x < 0 {
             u = !u;
@@ -300,17 +300,17 @@ impl Writer for NetworkLittleEndian {
         Ok(())
     }
 
-    fn write_f32(&mut self, buf: &mut impl Write, x: f32) -> encode::Res {
+    fn write_f32(&self, buf: &mut impl Write, x: f32) -> encode::Res {
         buf.write_f32::<byteorder::LittleEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_f64(&mut self, buf: &mut impl Write, x: f64) -> encode::Res {
+    fn write_f64(&self, buf: &mut impl Write, x: f64) -> encode::Res {
         buf.write_f64::<byteorder::LittleEndian>(x)
             .map_err(|x| ErrorPath::new(x.into()))
     }
 
-    fn write_string(&mut self, buf: &mut impl Write, x: &str) -> encode::Res {
+    fn write_string(&self, buf: &mut impl Write, x: &str) -> encode::Res {
         let modified_bytes = cesu8::to_java_cesu8(x);
         if modified_bytes.len() > i16::MAX as usize {
             return Err(ErrorPath::new(WriteError::SeqLengthViolation(
