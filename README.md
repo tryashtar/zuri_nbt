@@ -25,7 +25,7 @@ nbt.insert("name".to_string(), NBTTag::String("Zuri".to_string().into()));
 nbt.insert("age".to_string(), NBTTag::Int(18.into()));
 
 let mut buf = vec![];
-NBTTag::Compound(nbt.into()).write(&mut buf, &mut LittleEndian)
+NBTTag::Compound(nbt.into()).write::<LittleEndian>(&mut buf)
     .expect("Something went wrong while writing nbt");
  ```
 
@@ -43,7 +43,7 @@ let mut buf = vec![
     0x21, 0x00, 0x00, 0x00,
 ];
 
-let value = NBTTag::read(&mut buf.as_slice(), &mut LittleEndian)
+let value = NBTTag::read::<LittleEndian>(&mut buf.as_slice())
     .expect("Something went wrong while reading nbt");
 assert_eq!(value, NBTTag::String("Hello World!".to_string().into()));
  ```

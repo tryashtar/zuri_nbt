@@ -149,23 +149,23 @@ macro_rules! impl_tagtype {
             /// [Reader] encoding.
             ///
             /// Returns an error if the variant byte doesn't match this tag type.
-            pub fn read(buf: &mut impl Read, r: &impl Reader) -> decode::Res<Self> {
-                let tag_id = r.u8(buf)?;
+            pub fn read<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+                let tag_id = R::u8(buf)?;
                 if tag_id != $variant_num {
                     return Err(ErrorPath::new(ReadError::UnexpectedTag(
                         $variant_num,
                         tag_id,
                     )));
                 }
-                r.string(buf)?;
-                Self::read_payload(buf, r)
+                R::string(buf)?;
+                Self::read_payload::<R>(buf)
             }
 
             /// Attempts to write the NBT data into a buffer using the specified [Writer] encoding.
-            pub fn write(&self, buf: &mut impl Write, w: &impl Writer) -> encode::Res {
-                w.write_u8(buf, $variant_num)?;
-                w.write_string(buf, "")?;
-                self.write_payload(buf, w)
+            pub fn write<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+                W::write_u8(buf, $variant_num)?;
+                W::write_string(buf, "")?;
+                self.write_payload::<W>(buf)
             }
         }
     };
