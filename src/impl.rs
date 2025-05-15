@@ -49,7 +49,7 @@ impl_enum_conv!(
 );
 
 macro_rules! impl_newtype_conv {
-    ($typ:ty, $newtyp:path) => {
+    ($typ:ty, $newtyp:path, $enum_variant:path) => {
         impl From<$newtyp> for $typ {
             fn from(value: $newtyp) -> Self {
                 value.0
@@ -76,23 +76,41 @@ macro_rules! impl_newtype_conv {
             }
         }
 
+        impl TryFrom<NBTTag> for $typ {
+            type Error = NBTTag;
+
+            fn try_from(value: NBTTag) -> Result<Self, Self::Error> {
+                if let $enum_variant(v) = value {
+                    Ok(v.into())
+                } else {
+                    Err(value)
+                }
+            }
+        }
+
+        impl From<$typ> for NBTTag {
+            fn from(value: $typ) -> Self {
+                $enum_variant(value.into())
+            }
+        }
+
     };
-    ($(($typ:ty, $enum_variant:path)$(,)?)*) => {
-        $(impl_newtype_conv!($typ, $enum_variant);)*
+    ($(($typ:ty, $newtyp:path, $enum_variant:path)$(,)?)*) => {
+        $(impl_newtype_conv!($typ, $newtyp, $enum_variant);)*
     };
 }
 
 impl_newtype_conv!(
-    (i8, tag::Byte),
-    (i16, tag::Short),
-    (i32, tag::Int),
-    (i64, tag::Long),
-    (f32, tag::Float),
-    (f64, tag::Double),
-    (HashMap<String, NBTTag>, tag::Compound),
-    (Vec<i8>, tag::ByteArray),
-    (Vec<i32>, tag::IntArray),
-    (Vec<i64>, tag::LongArray),
+    (i8, tag::Byte, NBTTag::Byte),
+    (i16, tag::Short, NBTTag::Short),
+    (i32, tag::Int, NBTTag::Int),
+    (i64, tag::Long, NBTTag::Long),
+    (f32, tag::Float, NBTTag::Float),
+    (f64, tag::Double, NBTTag::Double),
+    (HashMap<String, NBTTag>, tag::Compound, NBTTag::Compound),
+    (Vec<i8>, tag::ByteArray, NBTTag::ByteArray),
+    (Vec<i32>, tag::IntArray, NBTTag::IntArray),
+    (Vec<i64>, tag::LongArray, NBTTag::LongArray),
 );
 
 /// Special case: converting `&str` to a [tag::String] requires a clone.
@@ -110,7 +128,19 @@ impl From<String> for tag::String {
 
 impl<T: Into<NBTTag>> From<Vec<T>> for tag::List {
     fn from(value: Vec<T>) -> Self {
-        tag::List(value.into_iter().map(|v| v.into()).collect())
+        value.into_iter().collect()
+    }
+}
+
+impl<T: Into<NBTTag>, const N: usize> From<[T; N]> for tag::List {
+    fn from(value: [T; N]) -> Self {
+        value.into_iter().collect()
+    }
+}
+
+impl<T: Into<NBTTag>> FromIterator<T> for tag::List {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        tag::List(iter.into_iter().map(|v| v.into()).collect())
     }
 }
 
