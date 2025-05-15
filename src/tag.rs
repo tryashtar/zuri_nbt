@@ -37,6 +37,15 @@ pub enum String {
     /// Arbitrary bytes that do not constitute valid UTF-8.
     Bytes(Vec<u8>),
 }
+impl String {
+    /// Converts the string tag to a UTF-8 string, substituting invalid characters if necessary.
+    pub fn to_string_lossy(&self) -> std::borrow::Cow<str> {
+        match self {
+            Self::Utf8(str) => std::borrow::Cow::Borrowed(str),
+            Self::Bytes(bytes) => std::string::String::from_utf8_lossy(&bytes),
+        }
+    }
+}
 
 /// A map containing zero or more key-value pairs.
 ///
@@ -66,6 +75,93 @@ pub struct LongArray(pub Vec<i64>);
 /// Contains utilities for the [Compound] NBT tag.
 pub mod compound {
     use crate::{tag, NBTTag};
+
+    impl super::Compound {
+        /// Returns a reference to a contained tag by name, if it exists and is a byte tag.
+        pub fn get_byte(&self, key: &str) -> Option<&tag::Byte> {
+            match self.get(key) {
+                Some(NBTTag::Byte(val)) => Some(val),
+                _ => None,
+            }
+        }
+        /// Returns a reference to a contained tag by name, if it exists and is a short tag.
+        pub fn get_short(&self, key: &str) -> Option<&tag::Short> {
+            match self.get(key) {
+                Some(NBTTag::Short(val)) => Some(val),
+                _ => None,
+            }
+        }
+        /// Returns a reference to a contained tag by name, if it exists and is an int tag.
+        pub fn get_int(&self, key: &str) -> Option<&tag::Int> {
+            match self.get(key) {
+                Some(NBTTag::Int(val)) => Some(val),
+                _ => None,
+            }
+        }
+        /// Returns a reference to a contained tag by name, if it exists and is a long tag.
+        pub fn get_long(&self, key: &str) -> Option<&tag::Long> {
+            match self.get(key) {
+                Some(NBTTag::Long(val)) => Some(val),
+                _ => None,
+            }
+        }
+        /// Returns a reference to a contained tag by name, if it exists and is a float tag.
+        pub fn get_float(&self, key: &str) -> Option<&tag::Float> {
+            match self.get(key) {
+                Some(NBTTag::Float(val)) => Some(val),
+                _ => None,
+            }
+        }
+        /// Returns a reference to a contained tag by name, if it exists and is a double tag.
+        pub fn get_double(&self, key: &str) -> Option<&tag::Double> {
+            match self.get(key) {
+                Some(NBTTag::Double(val)) => Some(val),
+                _ => None,
+            }
+        }
+        /// Returns a reference to a contained tag by name, if it exists and is a string tag.
+        pub fn get_string(&self, key: &str) -> Option<&tag::String> {
+            match self.get(key) {
+                Some(NBTTag::String(val)) => Some(val),
+                _ => None,
+            }
+        }
+        /// Returns a reference to a contained tag by name, if it exists and is a compound tag.
+        pub fn get_compound(&self, key: &str) -> Option<&tag::Compound> {
+            match self.get(key) {
+                Some(NBTTag::Compound(val)) => Some(val),
+                _ => None,
+            }
+        }
+        /// Returns a reference to a contained tag by name, if it exists and is a list tag.
+        pub fn get_list(&self, key: &str) -> Option<&tag::List> {
+            match self.get(key) {
+                Some(NBTTag::List(val)) => Some(val),
+                _ => None,
+            }
+        }
+        /// Returns a reference to a contained tag by name, if it exists and is a byte array tag.
+        pub fn get_byte_array(&self, key: &str) -> Option<&tag::ByteArray> {
+            match self.get(key) {
+                Some(NBTTag::ByteArray(val)) => Some(val),
+                _ => None,
+            }
+        }
+        /// Returns a reference to a contained tag by name, if it exists and is an int array tag.
+        pub fn get_int_array(&self, key: &str) -> Option<&tag::IntArray> {
+            match self.get(key) {
+                Some(NBTTag::IntArray(val)) => Some(val),
+                _ => None,
+            }
+        }
+        /// Returns a reference to a contained tag by name, if it exists and is a long array tag.
+        pub fn get_long_array(&self, key: &str) -> Option<&tag::LongArray> {
+            match self.get(key) {
+                Some(NBTTag::LongArray(val)) => Some(val),
+                _ => None,
+            }
+        }
+    }
 
     /// Allows for a more ergonomic way of creating NBT compound tags.
     #[must_use]
