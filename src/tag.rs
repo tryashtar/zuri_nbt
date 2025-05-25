@@ -1,5 +1,5 @@
 //! Contains all NBT tags.
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 use crate::NBTTag;
 
@@ -51,7 +51,7 @@ impl String {
 ///
 /// Each key maps to exactly one [NBTTag] of any type.
 #[derive(Default, Debug, Clone, PartialEq)]
-pub struct Compound(pub HashMap<std::string::String, NBTTag>);
+pub struct Compound(pub IndexMap<std::string::String, NBTTag>);
 
 /// A variable-length list [NBTTag]s of the same type.
 ///

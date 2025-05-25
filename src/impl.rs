@@ -4,7 +4,7 @@ use crate::decode::Reader;
 use crate::encode::Writer;
 use crate::err::{ErrorPath, ReadError};
 use crate::{decode, encode, tag, NBTTag, NBTTagType, TagIo};
-use std::collections::HashMap;
+use indexmap::IndexMap;
 use std::io::{Read, Write};
 use std::ops::{Deref, DerefMut};
 
@@ -107,7 +107,7 @@ impl_newtype_conv!(
     (i64, tag::Long, NBTTag::Long),
     (f32, tag::Float, NBTTag::Float),
     (f64, tag::Double, NBTTag::Double),
-    (HashMap<String, NBTTag>, tag::Compound, NBTTag::Compound),
+    (IndexMap<String, NBTTag>, tag::Compound, NBTTag::Compound),
     (Vec<i8>, tag::ByteArray, NBTTag::ByteArray),
     (Vec<i32>, tag::IntArray, NBTTag::IntArray),
     (Vec<i64>, tag::LongArray, NBTTag::LongArray),

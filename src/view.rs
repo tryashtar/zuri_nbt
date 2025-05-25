@@ -19,7 +19,6 @@
 //! ```
 
 use std::borrow::Cow;
-use std::collections::hash_map;
 use std::slice;
 
 use thiserror::Error;
@@ -458,7 +457,7 @@ impl<'a> Iterator for ViewIterator<'a> {
 
 #[derive(Debug, Clone)]
 enum InnerViewIterator<'a> {
-    Compound(hash_map::Iter<'a, String, NBTTag>),
+    Compound(indexmap::map::Iter<'a, String, NBTTag>),
     List(slice::Iter<'a, NBTTag>),
     ByteArray(slice::Iter<'a, i8>),
     IntArray(slice::Iter<'a, i32>),

@@ -1,7 +1,7 @@
 #![doc = include_str!("../README.md")]
 #![deny(missing_docs)]
 
-use std::collections::HashMap;
+use indexmap::IndexMap;
 use std::fmt::Debug;
 use std::io::{Read, Write};
 
@@ -172,7 +172,7 @@ impl NBTTag {
 
 impl Default for NBTTag {
     fn default() -> Self {
-        Self::Compound(HashMap::new().into())
+        Self::Compound(IndexMap::new().into())
     }
 }
 
@@ -314,7 +314,7 @@ impl TagIo for tag::List {
 }
 impl TagIo for tag::Compound {
     fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
-        let mut map = HashMap::new();
+        let mut map = IndexMap::new();
         loop {
             let content_type = R::u8(buf)?;
             if content_type == 0 {

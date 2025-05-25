@@ -16,11 +16,11 @@ used in Minecraft: Java Edition, is also supported, however.
 NBT data can be constructed and written as follows:
 
 ```rust
-use std::collections::HashMap;
+use indexmap::IndexMap;
 use zuri_nbt::encoding::LittleEndian;
 use zuri_nbt::NBTTag;
 
-let mut nbt = HashMap::new();
+let mut nbt = IndexMap::new();
 nbt.insert("name".to_string(), NBTTag::String("Zuri".to_string().into()));
 nbt.insert("age".to_string(), NBTTag::Int(18.into()));
 
