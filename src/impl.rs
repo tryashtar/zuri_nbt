@@ -5,6 +5,7 @@ use crate::encode::Writer;
 use crate::err::{ErrorPath, ReadError};
 use crate::{decode, encode, tag, NBTTag, NBTTagType, TagIo};
 use indexmap::IndexMap;
+use std::fmt::{Display, Formatter};
 use std::io::{Read, Write};
 use std::ops::{Deref, DerefMut};
 
@@ -212,3 +213,137 @@ impl_tagtype!(tag::List, NBTTagType::List, 9);
 impl_tagtype!(tag::ByteArray, NBTTagType::ByteArray, 7);
 impl_tagtype!(tag::IntArray, NBTTagType::IntArray, 11);
 impl_tagtype!(tag::LongArray, NBTTagType::LongArray, 12);
+
+impl Display for NBTTag {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NBTTag::Byte(byte) => byte.fmt(f),
+            NBTTag::Short(short) => short.fmt(f),
+            NBTTag::Int(int) => int.fmt(f),
+            NBTTag::Long(long) => long.fmt(f),
+            NBTTag::Float(float) => float.fmt(f),
+            NBTTag::Double(double) => double.fmt(f),
+            NBTTag::String(str) => str.fmt(f),
+            NBTTag::Compound(compound) => compound.fmt(f),
+            NBTTag::List(list) => list.fmt(f),
+            NBTTag::ByteArray(byte_array) => byte_array.fmt(f),
+            NBTTag::IntArray(int_array) => int_array.fmt(f),
+            NBTTag::LongArray(long_array) => long_array.fmt(f),
+        }
+    }
+}
+
+impl Display for tag::Byte {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}b", self.0)
+    }
+}
+
+impl Display for tag::Short {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}s", self.0)
+    }
+}
+
+impl Display for tag::Int {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Display for tag::Long {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}L", self.0)
+    }
+}
+
+impl Display for tag::Float {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}f", self.0)
+    }
+}
+
+impl Display for tag::Double {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}d", self.0)
+    }
+}
+
+impl Display for tag::String {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            tag::String::Utf8(str) => write!(f, "{:?}", str),
+            tag::String::Bytes(bytes) => write!(f, "{:?}", String::from_utf8_lossy(bytes)),
+        }
+    }
+}
+
+impl Display for tag::Compound {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{")?;
+        for (i, (name, val)) in self.0.iter().enumerate() {
+            write!(f, "{:?}: {}", name, val)?;
+            if i < self.len() - 1 {
+                write!(f, ", ")?;
+            }
+        }
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
+
+impl Display for tag::List {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{")?;
+        for (i, val) in self.0.iter().enumerate() {
+            write!(f, "{}", val)?;
+            if i < self.len() - 1 {
+                write!(f, ", ")?;
+            }
+        }
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
+
+impl Display for tag::ByteArray {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[B; ")?;
+        for (i, val) in self.0.iter().enumerate() {
+            write!(f, "{}b", val)?;
+            if i < self.len() - 1 {
+                write!(f, ", ")?;
+            }
+        }
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
+
+impl Display for tag::IntArray {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[I; ")?;
+        for (i, val) in self.0.iter().enumerate() {
+            write!(f, "{}", val)?;
+            if i < self.len() - 1 {
+                write!(f, ", ")?;
+            }
+        }
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
+
+impl Display for tag::LongArray {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[L; ")?;
+        for (i, val) in self.0.iter().enumerate() {
+            write!(f, "{}L", val)?;
+            if i < self.len() - 1 {
+                write!(f, ", ")?;
+            }
+        }
+        write!(f, "}}")?;
+        Ok(())
+    }
+}
