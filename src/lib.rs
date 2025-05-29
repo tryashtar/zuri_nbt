@@ -293,7 +293,7 @@ impl TagIo for tag::List {
 
     fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
         let first_id = if self.0.is_empty() {
-            NBTTag::Byte(0.into()).tag_id()
+            0
         } else {
             self.0[0].tag_id()
         };
