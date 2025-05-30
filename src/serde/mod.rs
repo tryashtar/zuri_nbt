@@ -26,7 +26,7 @@
 mod deserialize;
 mod serialize;
 
-use crate::err::ErrorPath;
+use crate::err::NBTError;
 use crate::serde::deserialize::Deserializer;
 use crate::serde::serialize::Serializer;
 use crate::NBTTag;
@@ -35,7 +35,7 @@ use std::fmt::Display;
 use thiserror::Error;
 
 /// Try to serialize a serde serializable type into NBT data.
-pub fn serialize<T: Serialize>(input: &T) -> Result<NBTTag, ErrorPath<SerializeError>> {
+pub fn serialize<T: Serialize>(input: &T) -> Result<NBTTag, NBTError<SerializeError>> {
     input.serialize(Serializer)
 }
 
@@ -66,7 +66,7 @@ pub enum SerializeError {
 /// Deserialize NBT data into a data type.
 pub fn deserialize<'de, T: Deserialize<'de>>(
     input: &'de NBTTag,
-) -> Result<T, ErrorPath<DeserializeError>> {
+) -> Result<T, NBTError<DeserializeError>> {
     T::deserialize(Deserializer::<'de>::new(input))
 }
 
@@ -93,27 +93,21 @@ pub enum DeserializeError {
     Custom(String),
 }
 
-impl<I: ser::Error + 'static> ser::Error for ErrorPath<I> {
+impl<I: ser::Error + 'static> ser::Error for NBTError<I> {
     fn custom<T>(msg: T) -> Self
     where
         T: Display,
     {
-        Self {
-            inner: I::custom(msg),
-            path: Default::default(),
-        }
+        Self::new(I::custom(msg))
     }
 }
 
-impl<I: de::Error + 'static> de::Error for ErrorPath<I> {
+impl<I: de::Error + 'static> de::Error for NBTError<I> {
     fn custom<T>(msg: T) -> Self
     where
         T: Display,
     {
-        Self {
-            inner: I::custom(msg),
-            path: Default::default(),
-        }
+        Self::new(I::custom(msg))
     }
 }
 

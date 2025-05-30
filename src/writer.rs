@@ -1,10 +1,10 @@
 //! See [Writer].
 use std::io::Write;
 
-use crate::err::{ErrorPath, PathPart, WriteError};
+use crate::err::{NBTError, PathPart, WriteError};
 
 /// A short notation for the result type used in the [Writer].
-pub type Res = Result<(), ErrorPath<WriteError>>;
+pub type Res = Result<(), NBTError<WriteError>>;
 
 /// A trait that can be implemented to alter how basic NBT types are written.
 ///
@@ -34,7 +34,7 @@ pub trait Writer {
     fn write_string(buf: &mut impl Write, x: &str) -> Res {
         let modified_bytes = cesu8::to_java_cesu8(x);
         if modified_bytes.len() > i16::MAX as usize {
-            return Err(ErrorPath::new(WriteError::SeqLengthViolation(
+            return Err(NBTError::new(WriteError::SeqLengthViolation(
                 i16::MAX as usize,
                 modified_bytes.len(),
             )));
@@ -50,7 +50,7 @@ pub trait Writer {
     /// Writes variable-length array of 8-bit signed integers.
     fn write_i8_vec(buf: &mut impl Write, x: &[i8]) -> Res {
         if x.len() > i32::MAX as usize {
-            return Err(ErrorPath::new(WriteError::SeqLengthViolation(
+            return Err(NBTError::new(WriteError::SeqLengthViolation(
                 i32::MAX as usize,
                 x.len(),
             )));
@@ -65,7 +65,7 @@ pub trait Writer {
     /// Writes variable-length array of 8-bit unsigned integers.
     fn write_u8_vec(buf: &mut impl Write, x: &[u8]) -> Res {
         if x.len() > i32::MAX as usize {
-            return Err(ErrorPath::new(WriteError::SeqLengthViolation(
+            return Err(NBTError::new(WriteError::SeqLengthViolation(
                 i32::MAX as usize,
                 x.len(),
             )));
@@ -80,7 +80,7 @@ pub trait Writer {
     /// Writes variable-length array of 32-bit signed integers.
     fn write_i32_vec(buf: &mut impl Write, x: &[i32]) -> Res {
         if x.len() > i32::MAX as usize {
-            return Err(ErrorPath::new(WriteError::SeqLengthViolation(
+            return Err(NBTError::new(WriteError::SeqLengthViolation(
                 i32::MAX as usize,
                 x.len(),
             )));
@@ -95,7 +95,7 @@ pub trait Writer {
     /// Writes variable-length array of 64-bit signed integers.
     fn write_i64_vec(buf: &mut impl Write, x: &[i64]) -> Res {
         if x.len() > i32::MAX as usize {
-            return Err(ErrorPath::new(WriteError::SeqLengthViolation(
+            return Err(NBTError::new(WriteError::SeqLengthViolation(
                 i32::MAX as usize,
                 x.len(),
             )));

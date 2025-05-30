@@ -2,6 +2,7 @@
 use std::collections::VecDeque;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
+use std::ops::{Deref, DerefMut};
 use thiserror::Error;
 
 use crate::NBTTagType;
@@ -50,25 +51,50 @@ pub enum WriteError {
 }
 
 /// A generic wrapper that gives a [Path] to an error type.
-pub struct ErrorPath<I> {
+pub struct NBTError<I> {
+    /// The inner data for an NBT error. It is boxed to reduce the memory footprint of the happy
+    /// path.
+    pub boxed: Box<InnerNBTError<I>>,
+}
+
+/// Inner container for the [NBTError] type.
+pub struct InnerNBTError<I> {
     /// The inner element that the wrapper wraps around.
     pub inner: I,
     /// The associated path. Usually, this should be the location where the error occurred.
     pub path: Path,
 }
 
-impl<I> ErrorPath<I> {
+impl<I> Deref for NBTError<I> {
+    type Target = InnerNBTError<I>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.boxed
+    }
+}
+
+impl<I> DerefMut for NBTError<I> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.boxed
+    }
+}
+
+impl<I> NBTError<I> {
     /// Create a new [ErrorPath] wrapper from the inner element, using the default (empty) path.
     pub fn new(inner: I) -> Self {
         Self {
-            inner,
-            path: Default::default(),
+            boxed: Box::new(InnerNBTError {
+                inner,
+                path: Default::default(),
+            }),
         }
     }
 
     /// Create a new [ErrorPath] wrapper from the inner element and a path.
     pub fn new_with_path(inner: I, path: Path) -> Self {
-        Self { inner, path }
+        Self {
+            boxed: Box::new(InnerNBTError { inner, path }),
+        }
     }
 
     /// Prepend the path in the wrapper with a new [PathPart].
@@ -78,31 +104,35 @@ impl<I> ErrorPath<I> {
     }
 }
 
-impl<I: Error + 'static> Error for ErrorPath<I> {
+impl<I: Error + 'static> Error for NBTError<I> {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         Some(&self.inner)
     }
 }
 
-impl<I: Clone> Clone for ErrorPath<I> {
+impl<I: Clone> Clone for NBTError<I> {
     fn clone(&self) -> Self {
         Self {
-            inner: self.inner.clone(),
-            path: self.path.clone(),
+            boxed: Box::new(InnerNBTError {
+                inner: self.inner.clone(),
+                path: self.path.clone(),
+            }),
         }
     }
 }
 
-impl<I: Default> Default for ErrorPath<I> {
+impl<I: Default> Default for NBTError<I> {
     fn default() -> Self {
         Self {
-            inner: Default::default(),
-            path: Default::default(),
+            boxed: Box::new(InnerNBTError {
+                inner: Default::default(),
+                path: Default::default(),
+            }),
         }
     }
 }
 
-impl<I: Debug> Debug for ErrorPath<I> {
+impl<I: Debug> Debug for NBTError<I> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ErrorPath")
             .field("inner", &self.inner)
@@ -111,7 +141,7 @@ impl<I: Debug> Debug for ErrorPath<I> {
     }
 }
 
-impl<I: Display> Display for ErrorPath<I> {
+impl<I: Display> Display for NBTError<I> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("`")?;
         <Path as Display>::fmt(&self.path, f)?;
@@ -120,13 +150,13 @@ impl<I: Display> Display for ErrorPath<I> {
     }
 }
 
-impl<I: PartialEq> PartialEq for ErrorPath<I> {
+impl<I: PartialEq> PartialEq for NBTError<I> {
     fn eq(&self, other: &Self) -> bool {
         self.inner == other.inner && self.path == other.path
     }
 }
 
-impl<I: Eq> Eq for ErrorPath<I> {}
+impl<I: Eq> Eq for NBTError<I> {}
 
 /// A 'path' in a rust type that indicates where an error occurred.
 #[derive(Debug, Default, Clone, Eq, PartialEq)]

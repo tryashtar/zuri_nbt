@@ -1,9 +1,9 @@
 //! See [Reader].
-use crate::err::{ErrorPath, PathPart, ReadError};
+use crate::err::{NBTError, PathPart, ReadError};
 use std::io::Read;
 
 /// A short notation for the result type used in the [Reader].
-pub type Res<T> = Result<T, ErrorPath<ReadError>>;
+pub type Res<T> = Result<T, NBTError<ReadError>>;
 
 /// A trait that can be implemented to alter how basic NBT types are read.
 ///
@@ -28,7 +28,7 @@ pub trait Reader {
     fn end(buf: &mut impl Read) -> Res<()> {
         let t = Self::u8(buf)?;
         if t != 0 {
-            return Err(ErrorPath::new(ReadError::UnexpectedTag(0, t)));
+            return Err(NBTError::new(ReadError::UnexpectedTag(0, t)));
         }
         Ok(())
     }
@@ -37,7 +37,7 @@ pub trait Reader {
     fn string(buf: &mut impl Read) -> Res<String> {
         let len = Self::i16(buf)?;
         let len: usize = len.try_into().map_err(|_| {
-            ErrorPath::new(ReadError::SeqLengthViolation(i16::MAX as usize, len as i32))
+            NBTError::new(ReadError::SeqLengthViolation(i16::MAX as usize, len as i32))
         })?;
 
         let mut str_buf = Vec::with_capacity(len.min(1024));
@@ -46,7 +46,7 @@ pub trait Reader {
         }
         match cesu8::from_java_cesu8(&str_buf) {
             Ok(str) => Ok(str.into_owned()),
-            Err(_) => Err(ErrorPath::new(ReadError::InvalidString(str_buf))),
+            Err(_) => Err(NBTError::new(ReadError::InvalidString(str_buf))),
         }
     }
 
@@ -54,7 +54,7 @@ pub trait Reader {
     fn u8_vec(buf: &mut impl Read) -> Res<Vec<u8>> {
         let len = Self::i32(buf)?;
         let len: usize = len.try_into().map_err(|_| {
-            ErrorPath::new(ReadError::SeqLengthViolation(
+            NBTError::new(ReadError::SeqLengthViolation(
                 // i32 has a lower limit on 32 bit machines.
                 usize::MAX.min(i32::MAX as usize),
                 len,
@@ -73,7 +73,7 @@ pub trait Reader {
     fn i8_vec(buf: &mut impl Read) -> Res<Vec<i8>> {
         let len = Self::i32(buf)?;
         let len: usize = len.try_into().map_err(|_| {
-            ErrorPath::new(ReadError::SeqLengthViolation(
+            NBTError::new(ReadError::SeqLengthViolation(
                 // i32 has a lower limit on 32 bit machines.
                 usize::MAX.min(i32::MAX as usize),
                 len,
@@ -92,7 +92,7 @@ pub trait Reader {
     fn i32_vec(buf: &mut impl Read) -> Res<Vec<i32>> {
         let len = Self::i32(buf)?;
         let len: usize = len.try_into().map_err(|_| {
-            ErrorPath::new(ReadError::SeqLengthViolation(
+            NBTError::new(ReadError::SeqLengthViolation(
                 // i32 has a lower limit on 32 bit machines.
                 usize::MAX.min(i32::MAX as usize),
                 len,
@@ -111,7 +111,7 @@ pub trait Reader {
     fn i64_vec(buf: &mut impl Read) -> Res<Vec<i64>> {
         let len = Self::i32(buf)?;
         let len: usize = len.try_into().map_err(|_| {
-            ErrorPath::new(ReadError::SeqLengthViolation(
+            NBTError::new(ReadError::SeqLengthViolation(
                 // i32 has a lower limit on 32 bit machines.
                 usize::MAX.min(i32::MAX as usize),
                 len,

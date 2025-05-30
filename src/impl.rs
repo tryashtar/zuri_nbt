@@ -1,6 +1,6 @@
 //! Implementations for type conversions from and to [NBTTag] using [From] and [TryFrom] and other
 //! useful traits and methods.
-use crate::err::{ErrorPath, ReadError};
+use crate::err::{NBTError, ReadError};
 use crate::reader::Reader;
 use crate::writer::Writer;
 use crate::{reader, tag, writer, NBTTag, NBTTagType, TagIo};
@@ -183,7 +183,7 @@ macro_rules! impl_tagtype {
             pub fn read<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
                 let tag_id = R::u8(buf)?;
                 if tag_id != $variant_num {
-                    return Err(ErrorPath::new(ReadError::UnexpectedTag(
+                    return Err(NBTError::new(ReadError::UnexpectedTag(
                         $variant_num,
                         tag_id,
                     )));

@@ -9,7 +9,7 @@ use strum_macros::{Display, IntoStaticStr};
 
 use writer::Writer;
 
-use crate::err::{ErrorPath, Path, PathPart, ReadError, WriteError};
+use crate::err::{NBTError, Path, PathPart, ReadError, WriteError};
 use crate::reader::Reader;
 use crate::view::View;
 
@@ -123,7 +123,7 @@ impl NBTTag {
             7 => Ok(NBTTag::ByteArray(tag::ByteArray::read_payload::<R>(buf)?)),
             11 => Ok(NBTTag::IntArray(tag::IntArray::read_payload::<R>(buf)?)),
             12 => Ok(NBTTag::LongArray(tag::LongArray::read_payload::<R>(buf)?)),
-            other => Err(ErrorPath::new(ReadError::UnknownTagType(other))),
+            other => Err(NBTError::new(ReadError::UnknownTagType(other))),
         }
     }
 
@@ -241,14 +241,15 @@ impl TagIo for tag::Double {
 impl TagIo for tag::String {
     fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         let string = R::string(buf);
-        if let Err(ErrorPath {
-            inner: ReadError::InvalidString(bytes),
-            path: _,
-        }) = string
-        {
-            Ok(tag::String::Bytes(bytes))
-        } else {
-            Ok(tag::String::Utf8(string?))
+        match string {
+            Ok(string) => Ok(tag::String::Utf8(string)),
+            Err(err) => {
+                if let ReadError::InvalidString(bytes) = err.boxed.inner {
+                    Ok(tag::String::Bytes(bytes))
+                } else {
+                    Err(err)
+                }
+            }
         }
     }
 
@@ -257,7 +258,7 @@ impl TagIo for tag::String {
             tag::String::Utf8(x) => W::write_string(buf, x.as_str()),
             tag::String::Bytes(x) => {
                 if x.len() > i16::MAX as usize {
-                    return Err(ErrorPath::new(WriteError::SeqLengthViolation(
+                    return Err(NBTError::new(WriteError::SeqLengthViolation(
                         i16::MAX as usize,
                         x.len(),
                     )));
@@ -276,7 +277,7 @@ impl TagIo for tag::List {
         let content_type = R::u8(buf)?;
         let len = R::i32(buf)?;
         let len: usize = len.try_into().map_err(|_| {
-            ErrorPath::new(ReadError::SeqLengthViolation(
+            NBTError::new(ReadError::SeqLengthViolation(
                 // i32 has a lower limit on 32 bit machines.
                 usize::MAX.min(i32::MAX as usize),
                 len,
@@ -303,7 +304,7 @@ impl TagIo for tag::List {
         W::write_i32(buf, self.len() as i32)?;
         for (i, v) in self.0.iter().enumerate() {
             if v.tag_id() != first_id {
-                return Err(ErrorPath::new_with_path(
+                return Err(NBTError::new_with_path(
                     WriteError::UnexpectedTag(self[0].tag_type(), v.tag_type()),
                     Path::from_single(PathPart::Element(i)),
                 ));
