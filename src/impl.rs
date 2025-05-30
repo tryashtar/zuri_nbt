@@ -1,9 +1,9 @@
 //! Implementations for type conversions from and to [NBTTag] using [From] and [TryFrom] and other
 //! useful traits and methods.
-use crate::decode::Reader;
-use crate::encode::Writer;
 use crate::err::{ErrorPath, ReadError};
-use crate::{decode, encode, tag, NBTTag, NBTTagType, TagIo};
+use crate::reader::Reader;
+use crate::writer::Writer;
+use crate::{reader, tag, writer, NBTTag, NBTTagType, TagIo};
 use indexmap::IndexMap;
 use std::fmt::{Display, Formatter};
 use std::io::{Read, Write};
@@ -180,7 +180,7 @@ macro_rules! impl_tagtype {
             /// [Reader] encoding.
             ///
             /// Returns an error if the variant byte doesn't match this tag type.
-            pub fn read<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+            pub fn read<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
                 let tag_id = R::u8(buf)?;
                 if tag_id != $variant_num {
                     return Err(ErrorPath::new(ReadError::UnexpectedTag(
@@ -193,7 +193,7 @@ macro_rules! impl_tagtype {
             }
 
             /// Attempts to write the NBT data into a buffer using the specified [Writer] encoding.
-            pub fn write<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+            pub fn write<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
                 W::write_u8(buf, $variant_num)?;
                 W::write_string(buf, "")?;
                 self.write_payload::<W>(buf)

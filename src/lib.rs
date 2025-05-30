@@ -7,21 +7,21 @@ use std::io::{Read, Write};
 
 use strum_macros::{Display, IntoStaticStr};
 
-use encode::Writer;
+use writer::Writer;
 
-use crate::decode::Reader;
 use crate::err::{ErrorPath, Path, PathPart, ReadError, WriteError};
+use crate::reader::Reader;
 use crate::view::View;
 
-pub mod decode;
-pub mod encode;
 pub mod encoding;
 pub mod err;
 mod r#impl;
+pub mod reader;
 #[cfg(feature = "serde")]
 pub mod serde;
 pub mod tag;
 pub mod view;
+pub mod writer;
 
 /// An enum representing all possible NBT data.
 #[derive(Debug, Clone, PartialEq)]
@@ -103,13 +103,13 @@ impl NBTTag {
 
     /// Attempts to read the data from a buffer into an NBT value using the specified [Reader]
     /// encoding.
-    pub fn read<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    pub fn read<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         let tag_id = R::u8(buf)?;
         R::string(buf)?;
         Self::read_payload::<R>(tag_id, buf)
     }
 
-    fn read_payload<R: Reader>(tag_id: u8, buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(tag_id: u8, buf: &mut impl Read) -> reader::Res<Self> {
         match tag_id {
             1 => Ok(NBTTag::Byte(tag::Byte::read_payload::<R>(buf)?)),
             2 => Ok(NBTTag::Short(tag::Short::read_payload::<R>(buf)?)),
@@ -128,13 +128,13 @@ impl NBTTag {
     }
 
     /// Attempts to write the NBT data into a buffer using the specified [Writer] encoding.
-    pub fn write<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    pub fn write<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         W::write_u8(buf, self.tag_id())?;
         W::write_string(buf, "")?;
         self.write_payload::<W>(buf)
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         match self {
             NBTTag::Byte(tag) => tag.write_payload::<W>(buf),
             NBTTag::Short(tag) => tag.write_payload::<W>(buf),
@@ -180,66 +180,66 @@ impl Default for NBTTag {
 trait TagIo: Sized {
     /// Attempts to read the payload data from a buffer into an NBT value using the specified
     /// [Reader] encoding.
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self>;
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self>;
     /// Attempts to write the NBT data into a buffer using the specified [Writer] encoding.
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res;
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res;
 }
 impl TagIo for tag::Byte {
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         Ok(R::i8(buf)?.into())
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         W::write_i8(buf, self.0)
     }
 }
 impl TagIo for tag::Short {
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         Ok(R::i16(buf)?.into())
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         W::write_i16(buf, self.0)
     }
 }
 impl TagIo for tag::Int {
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         Ok(R::i32(buf)?.into())
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         W::write_i32(buf, self.0)
     }
 }
 impl TagIo for tag::Long {
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         Ok(R::i64(buf)?.into())
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         W::write_i64(buf, self.0)
     }
 }
 impl TagIo for tag::Float {
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         Ok(R::f32(buf)?.into())
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         W::write_f32(buf, self.0)
     }
 }
 impl TagIo for tag::Double {
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         Ok(R::f64(buf)?.into())
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         W::write_f64(buf, self.0)
     }
 }
 impl TagIo for tag::String {
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         let string = R::string(buf);
         if let Err(ErrorPath {
             inner: ReadError::InvalidString(bytes),
@@ -252,7 +252,7 @@ impl TagIo for tag::String {
         }
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         match self {
             tag::String::Utf8(x) => W::write_string(buf, x.as_str()),
             tag::String::Bytes(x) => {
@@ -272,7 +272,7 @@ impl TagIo for tag::String {
     }
 }
 impl TagIo for tag::List {
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         let content_type = R::u8(buf)?;
         let len = R::i32(buf)?;
         if len < 0 {
@@ -291,7 +291,7 @@ impl TagIo for tag::List {
         Ok(vec.into())
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         let first_id = if self.0.is_empty() {
             0
         } else {
@@ -313,7 +313,7 @@ impl TagIo for tag::List {
     }
 }
 impl TagIo for tag::Compound {
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         let mut map = IndexMap::new();
         loop {
             let content_type = R::u8(buf)?;
@@ -328,7 +328,7 @@ impl TagIo for tag::Compound {
         Ok(map.into())
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         for (name, val) in &self.0 {
             W::write_u8(buf, val.tag_id())?;
             W::write_string(buf, name)?;
@@ -339,29 +339,29 @@ impl TagIo for tag::Compound {
     }
 }
 impl TagIo for tag::ByteArray {
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         Ok(R::i8_vec(buf)?.into())
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         W::write_i8_vec(buf, &self.0)
     }
 }
 impl TagIo for tag::IntArray {
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         Ok(R::i32_vec(buf)?.into())
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         W::write_i32_vec(buf, &self.0)
     }
 }
 impl TagIo for tag::LongArray {
-    fn read_payload<R: Reader>(buf: &mut impl Read) -> decode::Res<Self> {
+    fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         Ok(R::i64_vec(buf)?.into())
     }
 
-    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> encode::Res {
+    fn write_payload<W: Writer>(&self, buf: &mut impl Write) -> writer::Res {
         W::write_i64_vec(buf, &self.0)
     }
 }
