@@ -43,7 +43,7 @@ pub trait Reader {
             )));
         }
 
-        let mut str_buf = Vec::with_capacity(len as usize);
+        let mut str_buf = Vec::with_capacity(len.min(1024) as usize);
         for i in 0..len {
             str_buf.push(Self::u8(buf).map_err(|err| err.prepend(PathPart::Element(i as usize)))?);
         }
@@ -63,7 +63,7 @@ pub trait Reader {
             )));
         }
 
-        let mut vec_buf = Vec::with_capacity(len as usize);
+        let mut vec_buf = Vec::with_capacity(len.min(1024) as usize);
         for i in 0..len {
             vec_buf.push(Self::u8(buf).map_err(|err| err.prepend(PathPart::Element(i as usize)))?);
         }
@@ -81,7 +81,7 @@ pub trait Reader {
             )));
         }
 
-        let mut vec_buf = Vec::with_capacity(len as usize);
+        let mut vec_buf = Vec::with_capacity(len.min(1024) as usize);
         for i in 0..len {
             vec_buf.push(Self::i8(buf).map_err(|err| err.prepend(PathPart::Element(i as usize)))?);
         }
@@ -99,7 +99,7 @@ pub trait Reader {
             )));
         }
 
-        let mut vec_buf = Vec::with_capacity(len as usize);
+        let mut vec_buf = Vec::with_capacity((len as usize).min(1024 / size_of::<i64>()));
         for i in 0..len {
             vec_buf.push(Self::i32(buf).map_err(|err| err.prepend(PathPart::Element(i as usize)))?);
         }
@@ -117,7 +117,7 @@ pub trait Reader {
             )));
         }
 
-        let mut vec_buf = Vec::with_capacity(len as usize);
+        let mut vec_buf = Vec::with_capacity((len as usize).min(1024 / size_of::<i64>()));
         for i in 0..len {
             vec_buf.push(Self::i64(buf).map_err(|err| err.prepend(PathPart::Element(i as usize)))?);
         }

@@ -281,7 +281,7 @@ impl TagIo for tag::List {
                 len as usize,
             )));
         }
-        let mut vec = Vec::with_capacity(len as usize);
+        let mut vec = Vec::with_capacity((len as usize).min(1024 / size_of::<NBTTag>()));
         for i in 0..len {
             vec.push(
                 NBTTag::read_payload::<R>(content_type, buf)
