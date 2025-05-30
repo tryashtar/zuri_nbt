@@ -22,7 +22,7 @@ pub enum ReadError {
     /// The length prefix found in the buffer for a sequence is not in the acceptable bounds for
     /// that type.
     #[error("sequence length must be between 0 and {0}, but got {1}")]
-    SeqLengthViolation(usize, usize),
+    SeqLengthViolation(usize, i32),
     /// A byte sequence could not be read as a valid UTF-8 byte sequence.
     #[error("could not decode string")]
     InvalidString(Vec<u8>),

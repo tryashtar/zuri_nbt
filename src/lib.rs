@@ -275,17 +275,18 @@ impl TagIo for tag::List {
     fn read_payload<R: Reader>(buf: &mut impl Read) -> reader::Res<Self> {
         let content_type = R::u8(buf)?;
         let len = R::i32(buf)?;
-        if len < 0 {
-            return Err(ErrorPath::new(ReadError::SeqLengthViolation(
-                i32::MAX as usize,
-                len as usize,
-            )));
-        }
-        let mut vec = Vec::with_capacity((len as usize).min(1024 / size_of::<NBTTag>()));
+        let len: usize = len.try_into().map_err(|_| {
+            ErrorPath::new(ReadError::SeqLengthViolation(
+                // i32 has a lower limit on 32 bit machines.
+                usize::MAX.min(i32::MAX as usize),
+                len,
+            ))
+        })?;
+        let mut vec = Vec::with_capacity(len.min(1024 / size_of::<NBTTag>()));
         for i in 0..len {
             vec.push(
                 NBTTag::read_payload::<R>(content_type, buf)
-                    .map_err(|err| err.prepend(PathPart::Element(i as usize)))?,
+                    .map_err(|err| err.prepend(PathPart::Element(i)))?,
             );
         }
         Ok(vec.into())
