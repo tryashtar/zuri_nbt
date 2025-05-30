@@ -42,7 +42,7 @@ impl String {
     pub fn to_string_lossy(&self) -> std::borrow::Cow<str> {
         match self {
             Self::Utf8(str) => std::borrow::Cow::Borrowed(str),
-            Self::Bytes(bytes) => std::string::String::from_utf8_lossy(&bytes),
+            Self::Bytes(bytes) => std::string::String::from_utf8_lossy(bytes),
         }
     }
 }

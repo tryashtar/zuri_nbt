@@ -1,6 +1,6 @@
 # Overview
 
-Read and write [NBT](https://wiki.vg/NBT) data.
+Read and write [NBT](https://minecraft.wiki/w/NBT) data.
 
 Named Binary Tag (NBT) is a structured binary format used throughout Minecraft for a multitude
 of things. This crate mainly focuses on Minecraft: Bedrock Edition, and supports the

@@ -39,6 +39,14 @@ pub fn serialize<T: Serialize>(input: &T) -> Result<NBTTag, ErrorPath<SerializeE
     input.serialize(Serializer)
 }
 
+pub(crate) fn i8_to_u8(bytes: &[i8]) -> &[u8] {
+    unsafe { &*(bytes as *const _ as *const [u8]) }
+}
+
+pub(crate) fn u8_to_i8(bytes: &[u8]) -> &[i8] {
+    unsafe { &*(bytes as *const _ as *const [i8]) }
+}
+
 /// An error that can occur when serializing a struct into NBT data.
 #[derive(Debug, Error)]
 pub enum SerializeError {

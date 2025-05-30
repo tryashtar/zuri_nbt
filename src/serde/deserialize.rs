@@ -1,9 +1,11 @@
 use crate::err::PathPart;
 use crate::serde::{DeserializeError, ErrorPath};
-use crate::NBTTag;
+use crate::{tag, NBTTag};
+use indexmap::IndexMap;
 use serde::de;
 use serde::de::{DeserializeSeed, Visitor};
-use std::collections::{hash_map, HashMap};
+
+use super::i8_to_u8;
 
 pub(super) struct Deserializer<'de> {
     nbt: &'de NBTTag,
@@ -94,7 +96,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
     {
         if let NBTTag::ByteArray(v) = self.nbt {
             visitor.visit_i128(u128::from_le_bytes(
-                v.0[0..std::mem::size_of::<i128>()]
+                i8_to_u8(&v.0)[0..std::mem::size_of::<i128>()]
                     .try_into()
                     .map_err(|_| ErrorPath::new(DeserializeError::InvalidConversion))?,
             ) as i128)
@@ -108,7 +110,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
         V: Visitor<'de>,
     {
         match self.nbt {
-            NBTTag::Byte(v) => visitor.visit_u8(v.0),
+            NBTTag::Byte(v) => visitor.visit_u8(v.0 as u8),
             _ => Err(ErrorPath::new(DeserializeError::UnexpectedTag)),
         }
     }
@@ -149,7 +151,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
     {
         if let NBTTag::ByteArray(v) = self.nbt {
             visitor.visit_u128(u128::from_le_bytes(
-                v.0[0..std::mem::size_of::<u128>()]
+                i8_to_u8(&v.0)[0..std::mem::size_of::<u128>()]
                     .try_into()
                     .map_err(|_| ErrorPath::new(DeserializeError::InvalidConversion))?,
             ))
@@ -196,7 +198,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
         V: Visitor<'de>,
     {
         match self.nbt {
-            NBTTag::String(v) => visitor.visit_borrowed_str(v.0.as_str()),
+            NBTTag::String(tag::String::Utf8(v)) => visitor.visit_borrowed_str(v.as_str()),
             _ => Err(ErrorPath::new(DeserializeError::UnexpectedTag)),
         }
     }
@@ -206,7 +208,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
         V: Visitor<'de>,
     {
         match self.nbt {
-            NBTTag::String(v) => visitor.visit_borrowed_str(v.0.as_str()),
+            NBTTag::String(tag::String::Utf8(v)) => visitor.visit_borrowed_str(v.as_str()),
             _ => Err(ErrorPath::new(DeserializeError::UnexpectedTag)),
         }
     }
@@ -216,7 +218,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
         V: Visitor<'de>,
     {
         match self.nbt {
-            NBTTag::ByteArray(v) => visitor.visit_borrowed_bytes(v.0.as_slice()),
+            NBTTag::ByteArray(v) => visitor.visit_borrowed_bytes(i8_to_u8(&v.0)),
             _ => Err(ErrorPath::new(DeserializeError::UnexpectedTag)),
         }
     }
@@ -226,7 +228,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
         V: Visitor<'de>,
     {
         match self.nbt {
-            NBTTag::ByteArray(v) => visitor.visit_byte_buf(v.0.clone()),
+            NBTTag::ByteArray(v) => visitor.visit_byte_buf(i8_to_u8(&v.0).to_vec()),
             _ => Err(ErrorPath::new(DeserializeError::UnexpectedTag)),
         }
     }
@@ -240,8 +242,8 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
                 .0
                 .get("variant")
                 .ok_or(ErrorPath::new(DeserializeError::UnexpectedVariant))?;
-            let variant = if let NBTTag::String(v) = variant {
-                v.0.as_str()
+            let variant = if let NBTTag::String(tag::String::Utf8(v)) = variant {
+                v.as_str()
             } else {
                 return Err(ErrorPath::new(DeserializeError::UnexpectedVariant));
             };
@@ -389,7 +391,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
         V: Visitor<'de>,
     {
         match self.nbt {
-            NBTTag::String(v) => visitor.visit_str(v.0.as_str()),
+            NBTTag::String(tag::String::Utf8(v)) => visitor.visit_str(v.as_str()),
             _ => Err(ErrorPath::new(DeserializeError::UnexpectedTag)),
         }
     }
@@ -436,7 +438,7 @@ impl<'de> de::VariantAccess<'de> for Deserializer<'de> {
 }
 
 struct EnumAccess<'de> {
-    map: &'de HashMap<String, NBTTag>,
+    map: &'de IndexMap<String, NBTTag>,
 }
 
 impl<'de> de::EnumAccess<'de> for EnumAccess<'de> {
@@ -490,7 +492,7 @@ impl<'de, I: Iterator<Item = &'de NBTTag>> de::SeqAccess<'de> for ListAccess<'de
 }
 
 struct TupleAccess<'de> {
-    map: &'de HashMap<String, NBTTag>,
+    map: &'de IndexMap<String, NBTTag>,
     next: usize,
 }
 
@@ -518,7 +520,7 @@ impl<'de> de::SeqAccess<'de> for TupleAccess<'de> {
 }
 
 struct CompoundAccess<'de> {
-    map_iter: hash_map::Iter<'de, String, NBTTag>,
+    map_iter: indexmap::map::Iter<'de, String, NBTTag>,
     next_value: Option<(&'de str, &'de NBTTag)>,
 }
 

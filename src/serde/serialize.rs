@@ -1,13 +1,15 @@
 use crate::err::{ErrorPath, PathPart};
 use crate::serde::SerializeError;
 use crate::{err, tag, NBTTag};
+use indexmap::IndexMap;
 use serde::{ser, Serialize};
-use std::collections::HashMap;
+
+use super::u8_to_i8;
 
 pub(super) struct Serializer;
 
 fn wrap_enum(variant: &str, value: NBTTag) -> NBTTag {
-    let mut map = HashMap::new();
+    let mut map = IndexMap::new();
     map.insert(
         "variant".to_string(),
         NBTTag::String(variant.to_string().into()),
@@ -29,11 +31,11 @@ impl ser::Serializer for Serializer {
     type SerializeStructVariant = CompoundVariantSerializer;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
-        Ok(NBTTag::Byte((v as u8).into()))
+        Ok(NBTTag::Byte((v as i8).into()))
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-        Ok(NBTTag::Byte((v as u8).into()))
+        Ok(NBTTag::Byte(v.into()))
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
@@ -49,7 +51,7 @@ impl ser::Serializer for Serializer {
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
-        Ok(NBTTag::Byte(v.into()))
+        Ok(NBTTag::Byte((v as i8).into()))
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
@@ -77,7 +79,7 @@ impl ser::Serializer for Serializer {
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        Ok(NBTTag::ByteArray(v.to_vec().into()))
+        Ok(NBTTag::ByteArray(u8_to_i8(v).to_vec().into()))
     }
 
     fn serialize_struct(
@@ -93,11 +95,15 @@ impl ser::Serializer for Serializer {
     }
 
     fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
-        Ok(NBTTag::ByteArray((v as u128).to_le_bytes().to_vec().into()))
+        Ok(NBTTag::ByteArray(
+            u8_to_i8(v.to_le_bytes().as_slice()).to_vec().into(),
+        ))
     }
 
     fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
-        Ok(NBTTag::ByteArray(v.to_le_bytes().to_vec().into()))
+        Ok(NBTTag::ByteArray(
+            u8_to_i8(v.to_le_bytes().as_slice()).to_vec().into(),
+        ))
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
@@ -281,7 +287,7 @@ impl ser::Serializer for Serializer {
 /// Helper to serialize certain data types into a [NBTTag::Compound].
 #[derive(Default)]
 pub(super) struct CompoundSerializer {
-    v: HashMap<String, NBTTag>,
+    v: IndexMap<String, NBTTag>,
     index: usize,
 }
 
@@ -338,19 +344,19 @@ impl ser::SerializeMap for CompoundSerializer {
         K: Serialize,
         V: Serialize,
     {
-        let key_str = if let NBTTag::String(str) = key.serialize(Serializer)? {
+        let key_str = if let NBTTag::String(tag::String::Utf8(str)) = key.serialize(Serializer)? {
             str
         } else {
             return Err(ErrorPath::new(SerializeError::NonStringKey));
         };
         self.v.insert(
-            key_str.0,
+            key_str,
             value.serialize(Serializer).map_err(|err| {
                 err.prepend(PathPart::MapKey(
                     // The key has moved into the map, so we need to serialize it again.
                     <NBTTag as TryInto<tag::String>>::try_into(key.serialize(Serializer).unwrap())
                         .unwrap()
-                        .0,
+                        .to_string(),
                 ))
             })?,
         );
