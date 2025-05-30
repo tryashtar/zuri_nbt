@@ -1,6 +1,6 @@
 [package]
 name = "zuri_nbt"
-version = "0.3.0"
+version = "0.5.0"
 edition = "2021"
 description = "Read and write minecraft NBT data"
 repository = "https://github.com/zuri-mc/zuri_nbt/"
